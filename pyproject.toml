@@ -1,0 +1,32 @@
+[tool.pytest.ini_options]
+addopts = [
+    "--import-mode=importlib",
+]
+[project]
+name = "know-lang-bot"
+version = "0.1.0"
+description = ""
+authors = [
+    {name = "gabhyun kim",email = "kimgb415@gmail.com"}
+]
+readme = "README.md"
+requires-python = ">=3.10, <4.0"
+dependencies = [
+    "pydantic-ai (>=0.0.20,<0.0.21)",
+    "tree-sitter-languages (>=1.10.2,<2.0.0)",
+    "gitpython (>=3.1.44,<4.0.0)"
+]
+
+[tool.poetry]
+packages = [
+    { include = "src" },
+]
+
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.3.4"
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
+
