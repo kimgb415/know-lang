@@ -14,7 +14,6 @@ LOG = FancyLogger(__name__)
 class ChunkType(str, Enum):
     CLASS = "class"
     FUNCTION = "function"
-    MODULE = "module"
     OTHER = "other"
 
 class CodeChunk(BaseModel):
@@ -44,14 +43,36 @@ class CodeParser:
         self.language = Language(tree_sitter_python.language())
         self.parser = Parser(self.language)
 
-    def _extract_docstring(self, node: Node, source_code: bytes) -> Optional[str]:
-        """Extract docstring from a class or function node"""
-        for child in node.children:
-            if child.type == "expression_statement":
-                string_node = child.children[0]
-                if string_node.type in ("string", "string_literal"):
-                    return source_code[string_node.start_byte:string_node.end_byte].decode('utf-8')
-        return None
+    def _get_preceding_docstring(self, node: Node, source_code: bytes) -> Optional[str]:
+        """Extract docstring from comments"""
+        docstring_parts = []
+        current_node : Node = node.prev_sibling
+
+        while current_node:
+            print(current_node.text)
+            if current_node.type == "comment":
+                comment = source_code[current_node.start_byte:current_node.end_byte].decode('utf-8')
+                docstring_parts.insert(0, comment)
+            elif current_node.type == "expression_statement":
+                string_node = current_node.children[0] if current_node.children else None
+                if string_node and string_node.type in ("string", "string_literal"):
+                    docstring = source_code[string_node.start_byte:string_node.end_byte].decode('utf-8')
+                    docstring_parts.insert(0, docstring)
+                    
+                break
+            elif current_node.type not in ("empty_statement", "newline"):
+                break
+            current_node = current_node.prev_sibling
+        
+        return '\n'.join(docstring_parts) if docstring_parts else None
+
+    def _has_syntax_error(self, node: Node) -> bool:
+        """Check if the node or its children contain syntax errors"""
+        if node.type == "ERROR":
+            return True
+        if node.has_error:
+            return True
+        return any(self._has_syntax_error(child) for child in node.children)
 
     def parse_file(self, file_path: Path) -> List[CodeChunk]:
         """Parse a single file and return list of code chunks"""
@@ -64,6 +85,12 @@ class CodeParser:
                 source_code = f.read()
             
             tree = self.parser.parse(source_code)
+
+            # Check for overall syntax validity
+            if self._has_syntax_error(tree.root_node):
+                LOG.warning(f"Syntax errors found in {file_path}")
+                return []
+
             chunks: List[CodeChunk] = []
             
             # Process the syntax tree
@@ -73,15 +100,8 @@ class CodeParser:
                 elif node.type == "function_definition":
                     chunks.append(self._process_function(node, source_code, file_path))
                 else:
-                    # Store other top-level code as separate chunks
-                    if node.type not in ("comment", "empty_statement"):
-                        chunks.append(CodeChunk(
-                            type=ChunkType.OTHER,
-                            content=source_code[node.start_byte:node.end_byte].decode('utf-8'),
-                            start_line=node.start_point[0],
-                            end_line=node.end_point[0],
-                            file_path=str(file_path)
-                        ))
+                    # Skip other node types for now
+                    pass
             
             return chunks
         except Exception as e:
@@ -94,6 +114,9 @@ class CodeParser:
                    for child in node.children 
                    if child.type == "identifier")
         
+        if not name:
+            raise ValueError(f"Could not find class name in node: {node.text}")
+        
         return CodeChunk(
             type=ChunkType.CLASS,
             name=name,
@@ -101,7 +124,7 @@ class CodeParser:
             start_line=node.start_point[0],
             end_line=node.end_point[0],
             file_path=str(file_path),
-            docstring=self._extract_docstring(node, source_code)
+            docstring=self._get_preceding_docstring(node, source_code)
         )
 
     def _process_function(self, node: Node, source_code: bytes, file_path: Path) -> CodeChunk:
@@ -109,6 +132,9 @@ class CodeParser:
         name = next(child.text.decode('utf-8') 
                    for child in node.children 
                    if child.type == "identifier")
+
+        if not name:
+            raise ValueError(f"Could not find function name in node: {node.text}")
         
         return CodeChunk(
             type=ChunkType.FUNCTION,
@@ -117,7 +143,7 @@ class CodeParser:
             start_line=node.start_point[0],
             end_line=node.end_point[0],
             file_path=str(file_path),
-            docstring=self._extract_docstring(node, source_code)
+            docstring=self._get_preceding_docstring(node, source_code)
         )
 
     def parse_repository(self) -> List[CodeChunk]:
