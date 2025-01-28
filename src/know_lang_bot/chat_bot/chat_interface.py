@@ -45,7 +45,9 @@ class CodeQAChatInterface:
                         placeholder="What does the CodeParser class do?",
                         container=False
                     )
-                    clear = gr.ClearButton([msg, chatbot])
+                    with gr.Row():
+                        submit = gr.Button("Submit")
+                        clear = gr.ClearButton([msg, chatbot])
                 
                 with gr.Column(scale=1):
                     references = gr.Markdown(
@@ -65,6 +67,7 @@ class CodeQAChatInterface:
                 }
 
             msg.submit(respond, [msg, chatbot], [msg, chatbot])
+            submit.click(respond, [msg, chatbot], [msg, chatbot])
             clear.click(lambda: [], None, references)
 
         return interface

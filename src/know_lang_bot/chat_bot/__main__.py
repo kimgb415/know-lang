@@ -1,4 +1,4 @@
-from know_lang_bot.chat_bot.chat_config import ChatAppConfig, chat_app_config
+from know_lang_bot.chat_bot.chat_config import chat_app_config
 from know_lang_bot.chat_bot.chat_graph import process_chat
 import chromadb
 import asyncio
