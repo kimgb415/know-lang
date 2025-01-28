@@ -70,7 +70,7 @@ class CodeSummarizer:
                 model=self.config.llm.embedding_model,
                 input=text
             )
-            return response['embedding']
+            return response['embeddings']
         else:
             raise ValueError(f"Unsupported embedding provider: {self.config.llm.embedding_provider}")
 
@@ -114,7 +114,7 @@ class CodeSummarizer:
         # Store in ChromaDB
         self.collection.add(
             documents=[summary],
-            embeddings=[embedding],
+            embeddings=embedding,
             metadatas=[metadata.model_dump()],
             ids=[chunk_id]
         )

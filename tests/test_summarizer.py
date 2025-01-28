@@ -100,7 +100,7 @@ async def test_process_and_store_chunk_with_embedding(
     mock_agent.run = AsyncMock(return_value=mock_run_result)
     
     # Setup mock embedding response
-    mock_embedding = {'embedding': [0.1, 0.2, 0.3]}  # Sample embedding vector
+    mock_embedding = {'embeddings': [0.1, 0.2, 0.3]}  # Sample embedding vector
     mock_ollama.embed = Mock(return_value=mock_embedding)
     
     summarizer = CodeSummarizer(config)
@@ -122,8 +122,8 @@ async def test_process_and_store_chunk_with_embedding(
     assert add_call is not None
     
     kwargs = add_call[1]
-    assert len(kwargs['embeddings']) == 1
-    assert kwargs['embeddings'][0] == mock_embedding['embedding']
+    assert len(kwargs['embeddings']) == 3
+    assert kwargs['embeddings'] == mock_embedding['embeddings']
     assert kwargs['documents'][0] == mock_run_result.data
     assert kwargs['ids'][0] == f"{sample_chunks[0].file_path}:{sample_chunks[0].start_line}-{sample_chunks[0].end_line}"
     
