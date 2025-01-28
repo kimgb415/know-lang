@@ -1,7 +1,7 @@
 import gradio as gr
 from know_lang_bot.chat_bot.chat_config import ChatAppConfig, chat_app_config
 from know_lang_bot.utils.fancy_log import FancyLogger
-from know_lang_bot.chat_bot.chat_agent import code_qa_agent, CodeQADeps, AgentResponse
+from know_lang_bot.chat_bot.chat_graph import ChatResult, process_chat
 import chromadb
 from typing import List, Dict
 import logfire
@@ -12,7 +12,6 @@ class CodeQAChatInterface:
     def __init__(self, config: ChatAppConfig):
         self.config = config
         self._init_chroma()
-        self.agent = code_qa_agent
         
     def _init_chroma(self):
         """Initialize ChromaDB connection"""
@@ -28,23 +27,9 @@ class CodeQAChatInterface:
         self,
         message: str,
         history: List[Dict[str, str]]
-    ) -> AgentResponse:
+    ) -> ChatResult:
         """Process a question and return the answer with references"""
-        try:
-            deps = CodeQADeps(
-                collection=self.collection,
-                config=self.config
-            )
-            
-            response = await self.agent.run(message, deps=deps)
-            return response.data
-            
-        except Exception as e:
-            LOG.error(f"Error processing question: {e}")
-            return AgentResponse(
-                answer="I encountered an error processing your question. Please try again.",
-                references_md=""
-            )
+        return await process_chat(message, self.collection, self.config)
     
     def create_interface(self) -> gr.Blocks:
         """Create the Gradio interface"""
@@ -54,10 +39,7 @@ class CodeQAChatInterface:
             
             with gr.Row():
                 with gr.Column(scale=2):
-                    chatbot = gr.Chatbot(
-                        type="messages",
-                        bubble_full_width=False
-                    )
+                    chatbot = gr.Chatbot(type="messages", bubble_full_width=False)
                     msg = gr.Textbox(
                         label="Ask about the codebase",
                         placeholder="What does the CodeParser class do?",
@@ -72,13 +54,13 @@ class CodeQAChatInterface:
                     )
 
             async def respond(message, history):
-                response = await self.process_question(message, history)
-                references.value = response.references_md
+                result = await self.process_question(message, history)
+                references.value = result.references_md
                 return {
                     msg: "",
                     chatbot: history + [
                         {"role": "user", "content": message},
-                        {"role": "assistant", "content": response.answer}
+                        {"role": "assistant", "content": result.answer}
                     ]
                 }
 
