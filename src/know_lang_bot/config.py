@@ -20,6 +20,14 @@ class LLMConfig(BaseSettings):
         default_factory=dict,
         description="Additional model settings"
     )
+    embedding_model: str = Field(
+        default="mxbai-embed-large",
+        description="Name of the embedding model to use"
+    )
+    embedding_provider: str = Field(
+        default="ollama",
+        description="Provider for embeddings (ollama, openai, etc)"
+    )
 
 class DBConfig(BaseSettings):
     persist_directory: Path = Field(

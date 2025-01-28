@@ -3,6 +3,7 @@ import chromadb
 from chromadb.errors import InvalidCollectionException
 from pydantic_ai import Agent
 from pydantic import BaseModel, Field
+import ollama
 
 from know_lang_bot.config import AppConfig
 from know_lang_bot.code_parser.parser import CodeChunk
@@ -62,6 +63,17 @@ class CodeSummarizer:
                 metadata={"hnsw:space": "cosine"}
             )
 
+    def _get_embedding(self, text: str) -> List[float]:
+        """Get embedding for text using configured provider"""
+        if self.config.llm.embedding_provider == "ollama":
+            response = ollama.embed(
+                model=self.config.llm.embedding_model,
+                input=text
+            )
+            return response['embedding']
+        else:
+            raise ValueError(f"Unsupported embedding provider: {self.config.llm.embedding_provider}")
+
     async def summarize_chunk(self, chunk: CodeChunk) -> str:
         """Summarize a single code chunk using the LLM"""
         prompt = f"""
@@ -96,9 +108,13 @@ class CodeSummarizer:
             docstring=chunk.docstring if chunk.docstring else ''
         )
         
+        # Get embedding for the summary
+        embedding = self._get_embedding(summary)
+        
         # Store in ChromaDB
         self.collection.add(
             documents=[summary],
+            embeddings=[embedding],
             metadatas=[metadata.model_dump()],
             ids=[chunk_id]
         )

@@ -2,7 +2,6 @@ import pytest
 import tempfile
 from unittest.mock import Mock, patch, AsyncMock
 from pathlib import Path
-from pydantic_ai import Agent
 from know_lang_bot.code_parser.summarizer import CodeSummarizer
 from know_lang_bot.code_parser.parser import CodeChunk, ChunkType
 from know_lang_bot.config import AppConfig
@@ -84,3 +83,55 @@ def test_chromadb_initialization(mock_agent_class, config: AppConfig):
     summarizer.db_client.delete_collection(config.db.collection_name)
     new_summarizer = CodeSummarizer(config)
     assert new_summarizer.collection is not None
+
+@pytest.mark.asyncio
+@patch('know_lang_bot.code_parser.summarizer.ollama')
+@patch('know_lang_bot.code_parser.summarizer.Agent')
+async def test_process_and_store_chunk_with_embedding(
+    mock_agent_class, 
+    mock_ollama, 
+    config: AppConfig, 
+    sample_chunks: list[CodeChunk], 
+    mock_run_result: Mock
+):
+    """Test processing and storing a chunk with embedding"""
+    # Setup the mock agent instance
+    mock_agent = mock_agent_class.return_value
+    mock_agent.run = AsyncMock(return_value=mock_run_result)
+    
+    # Setup mock embedding response
+    mock_embedding = {'embedding': [0.1, 0.2, 0.3]}  # Sample embedding vector
+    mock_ollama.embed = Mock(return_value=mock_embedding)
+    
+    summarizer = CodeSummarizer(config)
+    
+    # Mock the collection's add method
+    summarizer.collection.add = Mock()
+    
+    # Process the chunk
+    await summarizer.process_and_store_chunk(sample_chunks[0])
+    
+    # Verify ollama.embed was called with correct parameters
+    mock_ollama.embed.assert_called_once_with(
+        model=config.llm.embedding_model,
+        input=mock_run_result.data
+    )
+    
+    # Verify collection.add was called with correct parameters
+    add_call = summarizer.collection.add.call_args
+    assert add_call is not None
+    
+    kwargs = add_call[1]
+    assert len(kwargs['embeddings']) == 1
+    assert kwargs['embeddings'][0] == mock_embedding['embedding']
+    assert kwargs['documents'][0] == mock_run_result.data
+    assert kwargs['ids'][0] == f"{sample_chunks[0].file_path}:{sample_chunks[0].start_line}-{sample_chunks[0].end_line}"
+    
+    # Verify metadata
+    metadata = kwargs['metadatas'][0]
+    assert metadata['file_path'] == sample_chunks[0].file_path
+    assert metadata['start_line'] == sample_chunks[0].start_line
+    assert metadata['end_line'] == sample_chunks[0].end_line
+    assert metadata['type'] == sample_chunks[0].type.value
+    assert metadata['name'] == sample_chunks[0].name
+    assert metadata['docstring'] == sample_chunks[0].docstring
