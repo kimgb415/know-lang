@@ -1,12 +1,10 @@
-from __future__ import annotations
 from dataclasses import dataclass
 from typing import List, Dict, Any, Optional
 import chromadb
 from pydantic import BaseModel
 from pydantic_graph import BaseNode, Graph, GraphRunContext, End
 import ollama
-import logfire
-from know_lang_bot.chat_bot.chat_config import ChatAppConfig, chat_app_config
+from know_lang_bot.chat_bot.chat_config import ChatAppConfig
 from know_lang_bot.utils.fancy_log import FancyLogger
 from pydantic_ai import Agent
 
@@ -23,9 +21,6 @@ class ChatResult(BaseModel):
     """Final result from the chat graph"""
     answer: str
     references_md: Optional[str] = None
-
-
-
 
 @dataclass
 class ChatGraphState:
