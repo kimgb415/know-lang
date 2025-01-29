@@ -1,3 +1,5 @@
+# __future__ annotations is necessary for the type hints to work in this file
+from __future__ import annotations
 from dataclasses import dataclass
 from typing import List, Dict, Any, Optional
 import chromadb
@@ -7,6 +9,8 @@ import ollama
 from know_lang_bot.chat_bot.chat_config import ChatAppConfig
 from know_lang_bot.utils.fancy_log import FancyLogger
 from pydantic_ai import Agent
+import logfire
+from pprint import pformat
 
 LOG = FancyLogger(__name__)
 
@@ -38,7 +42,7 @@ class ChatGraphDeps:
 
 # Graph Nodes
 @dataclass
-class PolishQuestion(BaseNode[ChatGraphState, ChatGraphDeps, ChatResult]):
+class PolishQuestionNode(BaseNode[ChatGraphState, ChatGraphDeps, ChatResult]):
     """Node that polishes the user's question"""
     system_prompt = """
     You are an expert at understanding code-related questions and reformulating them
@@ -46,7 +50,7 @@ class PolishQuestion(BaseNode[ChatGraphState, ChatGraphDeps, ChatResult]):
     it more specific and searchable. Focus on technical terms and code concepts.
     """
 
-    async def run(self, ctx: GraphRunContext[ChatGraphState]) -> RetrieveContext:
+    async def run(self, ctx: GraphRunContext[ChatGraphState, ChatGraphDeps]) -> RetrieveContextNode:
         # Create an agent for question polishing
         from pydantic_ai import Agent
         polish_agent = Agent(
@@ -62,13 +66,13 @@ class PolishQuestion(BaseNode[ChatGraphState, ChatGraphDeps, ChatResult]):
         
         result = await polish_agent.run(prompt)
         ctx.state.polished_question = result.data
-        return RetrieveContext()
+        return RetrieveContextNode()
 
 @dataclass
-class RetrieveContext(BaseNode[ChatGraphState, ChatGraphDeps, ChatResult]):
+class RetrieveContextNode(BaseNode[ChatGraphState, ChatGraphDeps, ChatResult]):
     """Node that retrieves relevant code context"""
     
-    async def run(self, ctx: GraphRunContext[ChatGraphState]) -> AnswerQuestion:
+    async def run(self, ctx: GraphRunContext[ChatGraphState, ChatGraphDeps]) -> AnswerQuestionNode:
         try:
             embedded_question = ollama.embed(
                 model=ctx.deps.config.llm.embedding_model,
@@ -80,6 +84,7 @@ class RetrieveContext(BaseNode[ChatGraphState, ChatGraphDeps, ChatResult]):
                 n_results=ctx.deps.config.chat.max_context_chunks,
                 include=['metadatas', 'documents', 'distances']
             )
+            logfire.debug('query result: {result}', result=pformat(results))
             
             relevant_chunks = []
             relevant_metadatas = []
@@ -102,20 +107,23 @@ class RetrieveContext(BaseNode[ChatGraphState, ChatGraphDeps, ChatResult]):
                     ref += f"\n- {meta['type']}: `{meta['name']}`"
                 references.append(ref)
             
+            with logfire.span('formatted {count} references', count=len(references)):
+                for ref in references:
+                    logfire.debug(ref)
+            
             ctx.state.retrieved_context = RetrievedContext(
                 chunks=relevant_chunks,
                 metadatas=relevant_metadatas,
                 references_md="\n\n".join(references)
             )
             
-            return AnswerQuestion()
-            
         except Exception as e:
             LOG.error(f"Error retrieving context: {e}")
-            return AnswerQuestion()
+        finally:
+            return AnswerQuestionNode()
 
 @dataclass
-class AnswerQuestion(BaseNode[ChatGraphState, ChatGraphDeps, ChatResult]):
+class AnswerQuestionNode(BaseNode[ChatGraphState, ChatGraphDeps, ChatResult]):
     """Node that generates the final answer"""
     system_prompt = """
     You are an expert code assistant helping users understand a codebase.
@@ -126,8 +134,7 @@ class AnswerQuestion(BaseNode[ChatGraphState, ChatGraphDeps, ChatResult]):
     4. If you're unsure about something, acknowledge it
     """
 
-    async def run(self, ctx: GraphRunContext[ChatGraphState]) -> End[ChatResult]:
-        
+    async def run(self, ctx: GraphRunContext[ChatGraphState, ChatGraphDeps]) -> End[ChatResult]:
         answer_agent = Agent(
             f"{ctx.deps.config.llm.model_provider}:{ctx.deps.config.llm.model_name}",
             system_prompt=self.system_prompt
@@ -166,7 +173,7 @@ class AnswerQuestion(BaseNode[ChatGraphState, ChatGraphDeps, ChatResult]):
 
 # Create the graph
 chat_graph = Graph(
-    nodes=[PolishQuestion, RetrieveContext, AnswerQuestion]
+    nodes=[PolishQuestionNode, RetrieveContextNode, AnswerQuestionNode]
 )
 
 async def process_chat(
@@ -182,7 +189,7 @@ async def process_chat(
     deps = ChatGraphDeps(collection=collection, config=config)
     
     result, _history = await chat_graph.run(
-        PolishQuestion(),
+        PolishQuestionNode(),
         state=state,
         deps=deps
     )
