@@ -51,9 +51,9 @@ class PolishQuestionNode(BaseNode[ChatGraphState, ChatGraphDeps, ChatResult]):
 
     async def run(self, ctx: GraphRunContext[ChatGraphState, ChatGraphDeps]) -> RetrieveContextNode:
         # Create an agent for question polishing
-        from pydantic_ai import Agent
         polish_agent = Agent(
-            f"{ctx.deps.config.llm.model_provider}:{ctx.deps.config.llm.model_name}"
+            f"{ctx.deps.config.llm.model_provider}:{ctx.deps.config.llm.model_name}",
+            system_prompt=self.system_prompt
         )
         prompt = f"""
         Original question: {ctx.state.original_question}
