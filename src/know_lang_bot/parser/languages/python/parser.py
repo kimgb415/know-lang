@@ -109,12 +109,12 @@ class PythonParser(LanguageParser):
             LOG.debug(f"Skipping file {file_path}: unsupported extension")
             return []
 
-        # Check file size limit
-        if file_path.stat().st_size > self.language_config.max_file_size:
-            LOG.warning(f"Skipping file {file_path}: exceeds size limit of {self.language_config.max_file_size} bytes")
-            return []
-
         try:
+            # Check file size limit
+            if file_path.stat().st_size > self.language_config.max_file_size:
+                LOG.warning(f"Skipping file {file_path}: exceeds size limit of {self.language_config.max_file_size} bytes")
+                return []
+
             with open(file_path, 'rb') as f:
                 source_code = f.read()
             
