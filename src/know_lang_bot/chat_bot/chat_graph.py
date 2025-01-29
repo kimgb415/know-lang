@@ -6,7 +6,7 @@ import chromadb
 from pydantic import BaseModel
 from pydantic_graph import BaseNode, Graph, GraphRunContext, End
 import ollama
-from know_lang_bot.chat_bot.chat_config import ChatAppConfig
+from know_lang_bot.config import AppConfig
 from know_lang_bot.utils.fancy_log import FancyLogger
 from pydantic_ai import Agent
 import logfire
@@ -36,7 +36,7 @@ class ChatGraphState:
 class ChatGraphDeps:
     """Dependencies required by the graph"""
     collection: chromadb.Collection
-    config: ChatAppConfig
+    config: AppConfig
 
 
 # Graph Nodes
@@ -74,7 +74,7 @@ class RetrieveContextNode(BaseNode[ChatGraphState, ChatGraphDeps, ChatResult]):
     async def run(self, ctx: GraphRunContext[ChatGraphState, ChatGraphDeps]) -> AnswerQuestionNode:
         try:
             embedded_question = ollama.embed(
-                model=ctx.deps.config.llm.embedding_model,
+                model=ctx.deps.config.embedding.model_name,
                 input=ctx.state.polished_question or ctx.state.original_question
             )
 
@@ -164,7 +164,7 @@ chat_graph = Graph(
 async def process_chat(
     question: str,
     collection: chromadb.Collection,
-    config: ChatAppConfig
+    config: AppConfig
 ) -> ChatResult:
     """
     Process a chat question through the graph.

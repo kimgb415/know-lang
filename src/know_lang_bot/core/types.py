@@ -17,3 +17,10 @@ class CodeChunk(BaseModel):
     name: Optional[str] = None
     parent_name: Optional[str] = None  # For nested classes/functions
     docstring: Optional[str] = None
+
+
+class ModelProvider(str, Enum):
+    OPENAI = "openai"
+    ANTHROPIC = "anthropic"
+    OLLAMA = "ollama"
+    HUGGINGFACE = "huggingface"

@@ -1,8 +1,9 @@
 from typing import Optional, Dict, Any, List
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from pydantic import Field
+from pydantic import Field, field_validator, ValidationInfo
 from pathlib import Path
 import fnmatch
+from know_lang_bot.core.types import ModelProvider
 
 class PathPatterns(BaseSettings):
     include: List[str] = Field(
@@ -53,13 +54,32 @@ class ParserConfig(BaseSettings):
     path_patterns: PathPatterns = Field(default_factory=PathPatterns)
 
 
+class EmbeddingConfig(BaseSettings):
+    """Shared embedding configuration"""
+    model_name: str = Field(
+        default="mxbai-embed-large",
+        description="Name of the embedding model"
+    )
+    provider: ModelProvider = Field(
+        default=ModelProvider.OLLAMA,
+        description="Provider for embeddings"
+    )
+    dimension: int = Field(
+        default=768,
+        description="Embedding dimension"
+    )
+    settings: Dict[str, Any] = Field(
+        default_factory=dict,
+        description="Provider-specific settings"
+    )
+
 class LLMConfig(BaseSettings):
     model_name: str = Field(
         default="llama3.2",
         description="Name of the LLM model to use"
     )
     model_provider: str = Field(
-        default="ollama",
+        default=ModelProvider.OLLAMA,
         description="Model provider (anthropic, openai, ollama, etc)"
     )
     api_key: Optional[str] = Field(
@@ -70,14 +90,14 @@ class LLMConfig(BaseSettings):
         default_factory=dict,
         description="Additional model settings"
     )
-    embedding_model: str = Field(
-        default="mxbai-embed-large",
-        description="Name of the embedding model to use"
-    )
-    embedding_provider: str = Field(
-        default="ollama",
-        description="Provider for embeddings (ollama, openai, etc)"
-    )
+
+    @field_validator('api_key', mode='after')
+    @classmethod
+    def validate_api_key(cls, v: Optional[str], info: ValidationInfo) -> Optional[str]:
+        """Validate API key is present when required"""
+        if info.data['model_provider'] in [ModelProvider.OPENAI, ModelProvider.ANTHROPIC] and not v:
+            raise ValueError(f"API key required for {info.data['model_provider']}")
+        return v
 
 class DBConfig(BaseSettings):
     persist_directory: Path = Field(
@@ -88,13 +108,27 @@ class DBConfig(BaseSettings):
         default="code_chunks",
         description="Name of the ChromaDB collection"
     )
-    embedding_model: str = Field(
-        default="sentence-transformers/all-mpnet-base-v2",
-        description="Embedding model to use"
-    )
     codebase_directory: Path = Field(
         default=Path("./"),
         description="Root directory of the codebase to analyze"
+    )
+
+class ChatConfig(BaseSettings):
+    max_context_chunks: int = Field(
+        default=5,
+        description="Maximum number of similar chunks to include in context"
+    )
+    similarity_threshold: float = Field(
+        default=0.7,
+        description="Minimum similarity score to include a chunk"
+    )
+    interface_title: str = Field(
+        default="Code Repository Q&A Assistant",
+        description="Title shown in the chat interface"
+    )
+    interface_description: str = Field(
+        default="Ask questions about the codebase and I'll help you understand it!",
+        description="Description shown in the chat interface"
     )
 
 class AppConfig(BaseSettings):
@@ -107,3 +141,5 @@ class AppConfig(BaseSettings):
     llm: LLMConfig = Field(default_factory=LLMConfig)
     db: DBConfig = Field(default_factory=DBConfig)
     parser: ParserConfig = Field(default_factory=ParserConfig)
+    chat: ChatConfig = Field(default_factory=ChatConfig)
+    embedding: EmbeddingConfig = Field(default_factory=EmbeddingConfig)

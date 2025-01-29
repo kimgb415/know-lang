@@ -5,7 +5,7 @@ from typing import List, Optional
 from rich.console import Console
 from rich.table import Table
 
-from know_lang_bot.code_parser.parser import CodeChunk
+from know_lang_bot.core.types import CodeChunk
 from know_lang_bot.config import AppConfig
 from know_lang_bot.parser.factory import CodeParserFactory
 from know_lang_bot.parser.providers.git import GitProvider

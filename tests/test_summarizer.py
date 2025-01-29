@@ -113,7 +113,7 @@ async def test_process_and_store_chunk_with_embedding(
     
     # Verify ollama.embed was called with correct parameters
     mock_ollama.embed.assert_called_once_with(
-        model=config.llm.embedding_model,
+        model=config.embedding.model_name,
         input=mock_run_result.data
     )
     

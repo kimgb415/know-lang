@@ -6,7 +6,7 @@ from pydantic import BaseModel, Field
 import ollama
 
 from know_lang_bot.config import AppConfig
-from know_lang_bot.code_parser.parser import CodeChunk
+from know_lang_bot.core.types import CodeChunk, ModelProvider
 from know_lang_bot.utils.fancy_log import FancyLogger
 from pprint import pformat
 
@@ -65,14 +65,14 @@ class CodeSummarizer:
 
     def _get_embedding(self, text: str) -> List[float]:
         """Get embedding for text using configured provider"""
-        if self.config.llm.embedding_provider == "ollama":
+        if self.config.embedding.provider == ModelProvider.OLLAMA:
             response = ollama.embed(
-                model=self.config.llm.embedding_model,
+                model=self.config.embedding.model_name,
                 input=text
             )
             return response['embeddings']
         else:
-            raise ValueError(f"Unsupported embedding provider: {self.config.llm.embedding_provider}")
+            raise ValueError(f"Unsupported embedding provider: {self.config.embedding.provider}")
 
     async def summarize_chunk(self, chunk: CodeChunk) -> str:
         """Summarize a single code chunk using the LLM"""
