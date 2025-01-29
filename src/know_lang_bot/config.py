@@ -1,7 +1,61 @@
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, List
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from pydantic import Field
 from pathlib import Path
+import fnmatch
+
+class PathPatterns(BaseSettings):
+    include: List[str] = Field(
+        default=["**/*"],
+        description="Glob patterns for paths to include"
+    )
+    exclude: List[str] = Field(
+        default=["**/venv/**", "**/.git/**", "**/__pycache__/**"],
+        description="Glob patterns for paths to exclude"
+    )
+
+    def should_process_path(self, path: str) -> bool:
+        """Check if a path should be processed based on include/exclude patterns"""
+        path_str = str(path)
+        
+        # First check exclusions
+        for pattern in self.exclude:
+            if fnmatch.fnmatch(path_str, pattern):
+                return False
+        
+        # Then check inclusions
+        for pattern in self.include:
+            if fnmatch.fnmatch(path_str, pattern):
+                return True
+        
+        return False
+
+class LanguageConfig(BaseSettings):
+    enabled: bool = True
+    file_extensions: List[str]
+    tree_sitter_language: str
+    chunk_types: List[str]
+    max_file_size: int = Field(
+        default=1_000_000,  # 1MB
+        description="Maximum file size to process in bytes"
+    )
+
+    def supports_extension(self, ext: str) -> bool:
+        """Check if the language supports a given file extension"""
+        return ext in self.file_extensions
+
+class ParserConfig(BaseSettings):
+    languages: Dict[str, LanguageConfig] = Field(
+        default={
+            "python": LanguageConfig(
+                file_extensions=[".py"],
+                tree_sitter_language="python",
+                chunk_types=["class_definition", "function_definition"]
+            )
+        }
+    )
+    path_patterns: PathPatterns = Field(default_factory=PathPatterns)
+
 
 class LLMConfig(BaseSettings):
     model_name: str = Field(
@@ -56,7 +110,4 @@ class AppConfig(BaseSettings):
     
     llm: LLMConfig = Field(default_factory=LLMConfig)
     db: DBConfig = Field(default_factory=DBConfig)
-    chunk_max_size: int = Field(
-        default=1500,
-        description="Maximum size of code chunks before splitting"
-    )
+    parser: ParserConfig = Field(default_factory=ParserConfig)
