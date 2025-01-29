@@ -19,12 +19,11 @@ class RetrievedContext(BaseModel):
     """Structure for retrieved context"""
     chunks: List[str]
     metadatas: List[Dict[str, Any]]
-    references_md: str
 
 class ChatResult(BaseModel):
     """Final result from the chat graph"""
     answer: str
-    references_md: Optional[str] = None
+    retrieved_context: Optional[RetrievedContext] = None
 
 @dataclass
 class ChatGraphState:
@@ -98,23 +97,9 @@ class RetrieveContextNode(BaseNode[ChatGraphState, ChatGraphDeps, ChatResult]):
                     relevant_chunks.append(doc)
                     relevant_metadatas.append(meta)
 
-            # Format references for display
-            references = []
-            for meta in relevant_metadatas:
-                file_path = meta['file_path'].split('/')[-1]
-                ref = f"**{file_path}** (lines {meta['start_line']}-{meta['end_line']})"
-                if meta.get('name'):
-                    ref += f"\n- {meta['type']}: `{meta['name']}`"
-                references.append(ref)
-            
-            with logfire.span('formatted {count} references', count=len(references)):
-                for ref in references:
-                    logfire.debug(ref)
-            
             ctx.state.retrieved_context = RetrievedContext(
                 chunks=relevant_chunks,
                 metadatas=relevant_metadatas,
-                references_md="\n\n".join(references)
             )
             
         except Exception as e:
@@ -144,7 +129,7 @@ class AnswerQuestionNode(BaseNode[ChatGraphState, ChatGraphDeps, ChatResult]):
             return End(ChatResult(
                 answer="I couldn't find any relevant code context for your question. "
                       "Could you please rephrase or be more specific?",
-                references_md=""
+                retrieved_context=None,
             ))
 
         context = ctx.state.retrieved_context
@@ -162,13 +147,13 @@ class AnswerQuestionNode(BaseNode[ChatGraphState, ChatGraphDeps, ChatResult]):
             result = await answer_agent.run(prompt)
             return End(ChatResult(
                 answer=result.data,
-                references_md=context.references_md
+                retrieved_context=context,
             ))
         except Exception as e:
             LOG.error(f"Error generating answer: {e}")
             return End(ChatResult(
                 answer="I encountered an error processing your question. Please try again.",
-                references_md=""
+                retrieved_context=context,
             ))
 
 # Create the graph

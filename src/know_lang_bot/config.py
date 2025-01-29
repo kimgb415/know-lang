@@ -42,6 +42,10 @@ class DBConfig(BaseSettings):
         default="sentence-transformers/all-mpnet-base-v2",
         description="Embedding model to use"
     )
+    codebase_directory: Path = Field(
+        default=Path("./"),
+        description="Root directory of the codebase to analyze"
+    )
 
 class AppConfig(BaseSettings):
     model_config = SettingsConfigDict(
