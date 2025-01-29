@@ -105,7 +105,8 @@ class PythonParser(LanguageParser):
 
     def parse_file(self, file_path: Path) -> List[CodeChunk]:
         """Parse a single Python file and return list of code chunks"""
-        if not self.language_config.supports_extension(file_path.suffix):
+        if not self.supports_extension(file_path.suffix):
+            LOG.debug(f"Skipping file {file_path}: unsupported extension")
             return []
 
         # Check file size limit
@@ -144,3 +145,7 @@ class PythonParser(LanguageParser):
         except Exception as e:
             LOG.error(f"Error parsing file {file_path}: {str(e)}")
             return []
+    
+    def supports_extension(self, ext: str) -> bool:
+        """Check if this parser supports a given file extension"""
+        return ext in self.language_config.file_extensions

@@ -24,3 +24,8 @@ class LanguageParser(ABC):
     def parse_file(self, file_path: Path) -> List[CodeChunk]:
         """Parse a single file and return code chunks"""
         pass
+
+    @abstractmethod
+    def supports_extension(self, ext: str) -> bool:
+        """Check if this parser supports a given file extension"""
+        pass

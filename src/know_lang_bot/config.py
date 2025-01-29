@@ -40,10 +40,6 @@ class LanguageConfig(BaseSettings):
         description="Maximum file size to process in bytes"
     )
 
-    def supports_extension(self, ext: str) -> bool:
-        """Check if the language supports a given file extension"""
-        return ext in self.file_extensions
-
 class ParserConfig(BaseSettings):
     languages: Dict[str, LanguageConfig] = Field(
         default={

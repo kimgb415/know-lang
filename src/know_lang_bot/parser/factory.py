@@ -30,7 +30,7 @@ class CodeParserFactory():
                 continue
                 
             parser = parser_class(self.config)
-            if extension in parser.supported_extensions():
+            if parser.supports_extension(extension):
                 if lang not in self._parsers:
                     parser.setup()
                     self._parsers[lang] = parser
