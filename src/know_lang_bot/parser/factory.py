@@ -29,11 +29,13 @@ class CodeParserFactory():
             if not self.config.parser.languages[lang].enabled:
                 continue
                 
-            parser = parser_class(self.config)
+            parser = self._parsers.get(lang)
+            if parser is None:
+                parser = parser_class(self.config)
+                parser.setup()
+                self._parsers[lang] = parser
+
             if parser.supports_extension(extension):
-                if lang not in self._parsers:
-                    parser.setup()
-                    self._parsers[lang] = parser
                 return self._parsers[lang]
         
         return None

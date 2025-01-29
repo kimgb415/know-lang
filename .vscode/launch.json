@@ -1,0 +1,14 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Know Lang Bot",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "know_lang_bot",
+      "args": [
+        "--v"
+      ]
+    }
+  ]
+}

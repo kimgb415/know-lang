@@ -8,7 +8,6 @@ from tree_sitter import Language, Parser
 class LanguageParser(ABC):
     """Abstract base class for language-specific parsers"""
     
-    @abstractmethod
     def __init__(self, config: AppConfig):
         self.config : AppConfig = config
         self.language : Language = None
