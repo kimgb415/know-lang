@@ -30,15 +30,22 @@ class CodeSummarizer:
     def _init_agent(self):
         """Initialize the LLM agent with configuration"""
         system_prompt = """
-        You are an expert code analyzer. Your task is to analyze code chunks and provide clear, 
-        concise summaries. Focus on:
-        1. The main purpose and functionality
-        2. Key implementation details
-        3. Important patterns or techniques used
-        4. Any notable dependencies or requirements
+You are an expert code analyzer. Your task is to analyze code chunks and provide clear, 
+concise summaries. Focus on following points:
+1. The main purpose and functionality
+- Use precise technical terms
+- Preserve class/function/variable names exactly
+- State the primary purpose
+2. Key implementation details
+- Focus on key algorithms, patterns, or design choices
+- Highlight important method signatures and interfaces
+3. Any notable dependencies or requirements
+-Reference related classes/functions by exact name
+- List external dependencies
+- Note any inherited or implemented interfaces
         
-        Provide a concise summary and list key points separately.
-        """
+Provide a clean and concise summary.
+"""
         
         self.agent = Agent(
             f"{self.config.llm.model_provider}:{self.config.llm.model_name}",
@@ -83,7 +90,7 @@ class CodeSummarizer:
         
         {f'Docstring: {chunk.docstring}' if chunk.docstring else ''}
         
-        Provide a concise summary and key points about its functionality and implementation.
+        Provide a concise summary.
         """
         
         result = await self.agent.run(prompt)
