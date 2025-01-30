@@ -194,10 +194,16 @@ async def process_chat(
     state = ChatGraphState(original_question=question)
     deps = ChatGraphDeps(collection=collection, config=config)
     
-    result, _history = await chat_graph.run(
-        PolishQuestionNode(),
-        state=state,
-        deps=deps
-    )
-    
-    return result
+    try:
+        result, _history = await chat_graph.run(
+            PolishQuestionNode(),
+            state=state,
+            deps=deps
+        )
+    except Exception as e:
+        LOG.error(f"Error processing chat in graph: {e}")
+        result = ChatResult(
+            answer="I encountered an error processing your question. Please try again."
+        )
+    finally:
+        return result
