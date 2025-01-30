@@ -1,4 +1,5 @@
 import argparse
+import asyncio
 import sys
 from pathlib import Path
 from typing import List, Optional
@@ -10,6 +11,7 @@ from know_lang_bot.config import AppConfig
 from know_lang_bot.parser.factory import CodeParserFactory
 from know_lang_bot.parser.providers.git import GitProvider
 from know_lang_bot.parser.providers.filesystem import FilesystemProvider
+from know_lang_bot.summarizer.summarizer import CodeSummarizer
 from know_lang_bot.utils.fancy_log import FancyLogger
 
 LOG = FancyLogger(__name__)
@@ -84,7 +86,7 @@ def display_results_json(chunks: List[CodeChunk]):
     import json
     print(json.dumps([chunk.model_dump() for chunk in chunks], indent=2))
 
-def main():
+async def main():
     args = parse_args()
     
     # Setup logging
@@ -110,8 +112,8 @@ def main():
         # Process files
         total_chunks = []
         with console.status("[bold green]Parsing files...") as status:
-            for file_path in provider.get_files():
-                status.update(f"[bold green]Processing {file_path}...")
+            for idx, file_path in enumerate(provider.get_files()):
+                status.update(f"[bold yellow] Processed {idx+1} files, [bold green]processing {file_path}...\n")
                 
                 parser = factory.get_parser(file_path)
                 if parser:
@@ -128,6 +130,10 @@ def main():
         else:
             LOG.warning("No code chunks found")
         
+        with console.status("[bold green]Summarizing chunks...") as status:
+            summarizer = CodeSummarizer(config)
+            await summarizer.process_chunks(total_chunks)
+        
     except Exception as e:
         LOG.error(f"Error: {str(e)}")
         if args.verbose:
@@ -136,4 +142,4 @@ def main():
         sys.exit(1)
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())
