@@ -24,13 +24,6 @@ def parse_args():
     )
     
     parser.add_argument(
-        "--source_path",
-        type=str,
-        default=".",
-        help="Path to the source code (git repository or directory)"
-    )
-    
-    parser.add_argument(
         "--config",
         type=str,
         help="Path to custom configuration file",
@@ -96,13 +89,12 @@ async def main():
     try:
         # Load configuration
         config = create_config(args.config)
-        source_path = Path(args.source_path)
-        
         # Create parser factory
         factory = CodeParserFactory(config)
         
         # Determine provider
-        if (source_path / '.git').exists():
+        source_path = Path(config.db.codebase_directory)
+        if (source_path/ '.git').exists():
             LOG.info(f"Detected Git repository at {source_path}")
             provider = GitProvider(source_path, config)
         else:
