@@ -4,11 +4,12 @@ from chromadb.errors import InvalidCollectionException
 from pydantic_ai import Agent
 from pydantic import BaseModel, Field
 import ollama
+from pprint import pformat
+from rich.progress import Progress
 
 from know_lang_bot.config import AppConfig
 from know_lang_bot.core.types import CodeChunk, ModelProvider
 from know_lang_bot.utils.fancy_log import FancyLogger
-from pprint import pformat
 
 LOG = FancyLogger(__name__)
 
@@ -129,5 +130,9 @@ Provide a clean, concise and focused summary. Don't include unnecessary nor gene
 
     async def process_chunks(self, chunks: List[CodeChunk]):
         """Process multiple chunks in parallel"""
-        for chunk in chunks:
-            await self.process_and_store_chunk(chunk)
+        with Progress() as progress:
+            task = progress.add_task("Summarizing chunks into vector database...", total=len(chunks))
+            
+            for chunk in chunks:
+                await self.process_and_store_chunk(chunk)
+                progress.advance(task)

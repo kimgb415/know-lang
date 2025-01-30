@@ -122,9 +122,8 @@ async def main():
         else:
             LOG.warning("No code chunks found")
         
-        with console.status("[bold green]Summarizing chunks...") as status:
-            summarizer = CodeSummarizer(config)
-            await summarizer.process_chunks(total_chunks)
+        summarizer = CodeSummarizer(config)
+        await summarizer.process_chunks(total_chunks)
         
     except Exception as e:
         LOG.error(f"Error: {str(e)}")
