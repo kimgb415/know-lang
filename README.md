@@ -3,10 +3,8 @@ title: KnowLangBot
 emoji: 🤖
 colorFrom: blue
 colorTo: purple
-sdk: gradio
-sdk_version: "5.13.1"
-app_file: app.py
-pinned: false
+sdk: docker
+app_port: 7860
 ---
 
 # Know Lang Bot
