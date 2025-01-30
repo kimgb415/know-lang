@@ -1,5 +1,5 @@
 import gradio as gr
-from know_lang_bot.chat_bot.chat_config import ChatAppConfig, chat_app_config
+from know_lang_bot.config import AppConfig
 from know_lang_bot.utils.fancy_log import FancyLogger
 from know_lang_bot.chat_bot.chat_graph import ChatResult, process_chat
 import chromadb
@@ -10,7 +10,7 @@ from pathlib import Path
 LOG = FancyLogger(__name__)
 
 class CodeQAChatInterface:
-    def __init__(self, config: ChatAppConfig):
+    def __init__(self, config: AppConfig):
         self.config = config
         self._init_chroma()
         self.codebase_dir = Path(config.db.codebase_directory)
@@ -117,6 +117,6 @@ class CodeQAChatInterface:
 
         return interface
 
-def create_chatbot() -> gr.Blocks:
-    interface = CodeQAChatInterface(chat_app_config)
+def create_chatbot(config: AppConfig) -> gr.Blocks:
+    interface = CodeQAChatInterface(config)
     return interface.create_interface()
