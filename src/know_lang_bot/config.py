@@ -11,7 +11,12 @@ class PathPatterns(BaseSettings):
         description="Glob patterns for paths to include"
     )
     exclude: List[str] = Field(
-        default=["**/venv/**", "**/.git/**", "**/__pycache__/**"],
+        default=[
+            "**/venv/**", 
+            "**/.git/**", 
+            "**/__pycache__/**", 
+            "**/tests/**",
+        ],
         description="Glob patterns for paths to exclude"
     )
 
