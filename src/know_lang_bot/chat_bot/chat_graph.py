@@ -43,10 +43,21 @@ class ChatGraphDeps:
 @dataclass
 class PolishQuestionNode(BaseNode[ChatGraphState, ChatGraphDeps, ChatResult]):
     """Node that polishes the user's question"""
-    system_prompt = """
-    You are an expert at understanding code-related questions and reformulating them
-    for better context retrieval. Your task is to polish the user's question to make
-    it more specific and searchable. Focus on technical terms and code concepts.
+    system_prompt = """You are a code question refinement expert. Your ONLY task is to rephrase questions 
+to be more precise for code context retrieval. Follow these rules strictly:
+
+1. Output ONLY the refined question - no explanations or analysis
+2. Preserve the original intent completely
+3. Add missing technical terms if obvious
+4. Keep the question concise - ideally one sentence
+5. Focus on searchable technical terms
+6. Do not add speculative terms not implied by the original question
+
+Example Input: "How do I use transformers for translation?"
+Example Output: "How do I use the Transformers pipeline for machine translation tasks?"
+
+Example Input: "Where is the config stored?"
+Example Output: "Where is the configuration file or configuration settings stored in this codebase?"
     """
 
     async def run(self, ctx: GraphRunContext[ChatGraphState, ChatGraphDeps]) -> RetrieveContextNode:
@@ -55,13 +66,10 @@ class PolishQuestionNode(BaseNode[ChatGraphState, ChatGraphDeps, ChatResult]):
             f"{ctx.deps.config.llm.model_provider}:{ctx.deps.config.llm.model_name}",
             system_prompt=self.system_prompt
         )
-        prompt = f"""
-        Original question: {ctx.state.original_question}
-        
-        Please reformulate this question to be more specific and searchable,
-        focusing on technical terms and code concepts. Keep the core meaning
-        but make it more precise for code context retrieval.
-        """
+        prompt = f"""Original question: "{ctx.state.original_question}"
+
+Return ONLY the polished question - no explanations or analysis.
+Focus on making the question more searchable while preserving its original intent."""
         
         result = await polish_agent.run(prompt)
         ctx.state.polished_question = result.data
@@ -111,13 +119,22 @@ class RetrieveContextNode(BaseNode[ChatGraphState, ChatGraphDeps, ChatResult]):
 class AnswerQuestionNode(BaseNode[ChatGraphState, ChatGraphDeps, ChatResult]):
     """Node that generates the final answer"""
     system_prompt = """
-    You are an expert code assistant helping users understand a codebase.
-    Always:
-    1. Reference specific files and line numbers in your explanations
-    2. Be direct and concise while being comprehensive
-    3. If the context is insufficient, explain why
-    4. If you're unsure about something, acknowledge it
-    """
+You are an expert code assistant helping developers understand complex codebases. Follow these rules strictly:
+
+1. ALWAYS START by directly answering the user's question - this is your primary task
+2. Base your answer ONLY on the provided code context, not on general knowledge
+3. When referencing code:
+   - Cite specific files and line numbers
+   - Quote relevant code snippets briefly
+   - Explain why this code is relevant to the question
+4. If you cannot find sufficient context to answer fully:
+   - Clearly state what's missing
+   - Explain what additional information would help
+5. Focus on accuracy over comprehensiveness:
+   - If you're unsure about part of your answer, explicitly say so
+   - Better to acknowledge limitations than make assumptions
+
+Remember: Your primary goal is answering the user's specific question, not explaining the entire codebase."""
 
     async def run(self, ctx: GraphRunContext[ChatGraphState, ChatGraphDeps]) -> End[ChatResult]:
         answer_agent = Agent(
@@ -134,13 +151,17 @@ class AnswerQuestionNode(BaseNode[ChatGraphState, ChatGraphDeps, ChatResult]):
 
         context = ctx.state.retrieved_context
         prompt = f"""
-        Question: {ctx.state.original_question}
-        
-        Available Code Context:
-        {context.chunks}
-        
-        Please provide a comprehensive answer based on the code context above.
-        Make sure to reference specific files and line numbers from the context.
+Question: {ctx.state.original_question}
+
+Relevant Code Context:
+{context.chunks}
+
+Provide a focused answer to the question above. Structure your response as:
+1. Direct Answer: Start with a clear, concise answer to the question
+2. Supporting Evidence: Reference specific code with file locations
+3. Limitations (if any): Note any missing context or uncertainties
+
+Important: Stay focused on answering the specific question asked.
         """
         
         try:
