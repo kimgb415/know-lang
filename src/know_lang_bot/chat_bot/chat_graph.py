@@ -1,20 +1,85 @@
 # __future__ annotations is necessary for the type hints to work in this file
 from __future__ import annotations
 from dataclasses import dataclass
-from typing import List, Dict, Any, Optional
+from typing import AsyncGenerator, List, Dict, Any, Optional
 import chromadb
 from pydantic import BaseModel
-from pydantic_graph import BaseNode, Graph, GraphRunContext, End
+from pydantic_graph import BaseNode, EndStep, Graph, GraphRunContext, End, HistoryStep
 import ollama
 from know_lang_bot.config import AppConfig
 from know_lang_bot.utils.fancy_log import FancyLogger
 from pydantic_ai import Agent
 import logfire
 from pprint import pformat
+from enum import Enum
 
 LOG = FancyLogger(__name__)
 
-# Data Models
+class ChatStatus(str, Enum):
+    """Enum for tracking chat progress status"""
+    STARTING = "starting"
+    POLISHING = "polishing"
+    RETRIEVING = "retrieving"
+    ANSWERING = "answering"
+    COMPLETE = "complete"
+    ERROR = "error"
+
+class StreamingChatResult(BaseModel):
+    """Extended chat result with streaming information"""
+    answer: str
+    retrieved_context: Optional[RetrievedContext] = None
+    status: ChatStatus
+    progress_message: str
+    
+    @classmethod
+    def from_node(cls, node: BaseNode, state: ChatGraphState) -> StreamingChatResult:
+        """Create a StreamingChatResult from a node's current state"""
+        if isinstance(node, PolishQuestionNode):
+            return cls(
+                answer="",
+                status=ChatStatus.POLISHING,
+                progress_message=f"Refining question: '{state.original_question}'"
+            )
+        elif isinstance(node, RetrieveContextNode):
+            return cls(
+                answer="",
+                status=ChatStatus.RETRIEVING,
+                progress_message=f"Searching codebase with: '{state.polished_question or state.original_question}'"
+            )
+        elif isinstance(node, AnswerQuestionNode):
+            context_msg = f"Found {len(state.retrieved_context.chunks)} relevant segments" if state.retrieved_context else "No context found"
+            return cls(
+                answer="",
+                retrieved_context=state.retrieved_context,
+                status=ChatStatus.ANSWERING,
+                progress_message=f"Generating answer... {context_msg}"
+            )
+        else:
+            return cls(
+                answer="",
+                status=ChatStatus.ERROR,
+                progress_message=f"Unknown node type: {type(node).__name__}"
+            )
+    
+    @classmethod
+    def complete(cls, result: ChatResult) -> StreamingChatResult:
+        """Create a completed StreamingChatResult"""
+        return cls(
+            answer=result.answer,
+            retrieved_context=result.retrieved_context,
+            status=ChatStatus.COMPLETE,
+            progress_message="Response complete"
+        )
+    
+    @classmethod
+    def error(cls, error_msg: str) -> StreamingChatResult:
+        """Create an error StreamingChatResult"""
+        return cls(
+            answer=f"Error: {error_msg}",
+            status=ChatStatus.ERROR,
+            progress_message=f"An error occurred: {error_msg}"
+        )
+
 class RetrievedContext(BaseModel):
     """Structure for retrieved context"""
     chunks: List[str]
@@ -207,3 +272,65 @@ async def process_chat(
         )
     finally:
         return result
+    
+async def stream_chat_progress(
+    question: str,
+    collection: chromadb.Collection,
+    config: AppConfig
+) -> AsyncGenerator[StreamingChatResult, None]:
+    """
+    Stream chat progress through the graph.
+    This is the main entry point for chat processing.
+    """
+    state = ChatGraphState(original_question=question)
+    deps = ChatGraphDeps(collection=collection, config=config)
+    
+    start_node = PolishQuestionNode()
+    history: list[HistoryStep[ChatGraphState, ChatResult]] = []
+
+    try:
+        # Initial status
+        yield StreamingChatResult(
+            answer="",
+            status=ChatStatus.STARTING,
+            progress_message=f"Processing question: {question}"
+        )
+
+        with logfire.span(
+            '{graph_name} run {start=}',
+            graph_name='RAG_chat_graph',
+            start=start_node,
+        ) as run_span:
+            current_node = start_node
+            
+            while True:
+                # Yield current node's status before processing
+                yield StreamingChatResult.from_node(current_node, state)
+                
+                try:
+                    # Process the current node
+                    next_node = await chat_graph.next(current_node, history, state=state, deps=deps, infer_name=False)
+                    
+                    if isinstance(next_node, End):
+                        result: ChatResult = next_node.data
+                        history.append(EndStep(result=next_node))
+                        run_span.set_attribute('history', history)
+                        # Yield final result
+                        yield StreamingChatResult.complete(result)
+                        return
+                    elif isinstance(next_node, BaseNode):
+                        current_node = next_node
+                    else:
+                        raise ValueError(f"Invalid node type: {type(next_node)}")
+                        
+                except Exception as node_error:
+                    LOG.error(f"Error in node {current_node.__class__.__name__}: {node_error}")
+                    yield StreamingChatResult.error(str(node_error))
+                    return
+                    
+    except Exception as e:
+        LOG.error(f"Error in stream_chat_progress: {e}")
+        yield StreamingChatResult.error(str(e))
+        return
+
+    
