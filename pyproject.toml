@@ -32,6 +32,13 @@ packages = [
 pytest = "^8.3.4"
 pytest-asyncio = "^0.25.2"
 
+[tool.poetry.group.huggingface]
+optional=true
+
+[tool.poetry.group.huggingface.dependencies]
+torch = "^2.6.0"
+transformers = "^4.48.2"
+
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]
 build-backend = "poetry.core.masonry.api"
