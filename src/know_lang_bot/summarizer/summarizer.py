@@ -10,6 +10,7 @@ from rich.progress import Progress
 from know_lang_bot.config import AppConfig
 from know_lang_bot.core.types import CodeChunk, ModelProvider
 from know_lang_bot.utils.fancy_log import FancyLogger
+from know_lang_bot.utils.model_provider import create_pydantic_model
 
 LOG = FancyLogger(__name__)
 
@@ -50,7 +51,10 @@ Provide a clean, concise and focused summary. Don't include unnecessary nor gene
 """
         
         self.agent = Agent(
-            f"{self.config.llm.model_provider}:{self.config.llm.model_name}",
+            create_pydantic_model(
+                model_provider=self.config.llm.model_provider,
+                model_name=self.config.llm.model_name
+            ),
             system_prompt=system_prompt,
             model_settings=self.config.llm.model_settings
         )

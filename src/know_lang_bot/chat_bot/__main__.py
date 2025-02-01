@@ -19,7 +19,6 @@ async def test_chat_processing():
     )
     
     print(f"Answer: {result.answer}")
-    print(f"References: {result.references_md}")
 
 if __name__ == "__main__":
     asyncio.run(test_chat_processing())

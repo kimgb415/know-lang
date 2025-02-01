@@ -12,8 +12,11 @@ from pydantic_ai import Agent
 import logfire
 from pprint import pformat
 from enum import Enum
+from rich.console import Console
+from know_lang_bot.utils.model_provider import create_pydantic_model
 
 LOG = FancyLogger(__name__)
+console = Console()
 
 class ChatStatus(str, Enum):
     """Enum for tracking chat progress status"""
@@ -128,7 +131,10 @@ Example Output: "Where is the configuration file or configuration settings store
     async def run(self, ctx: GraphRunContext[ChatGraphState, ChatGraphDeps]) -> RetrieveContextNode:
         # Create an agent for question polishing
         polish_agent = Agent(
-            f"{ctx.deps.config.llm.model_provider}:{ctx.deps.config.llm.model_name}",
+            create_pydantic_model(
+                model_provider=ctx.deps.config.llm.model_provider,
+                model_name=ctx.deps.config.llm.model_name
+            ),
             system_prompt=self.system_prompt
         )
         prompt = f"""Original question: "{ctx.state.original_question}"
@@ -203,7 +209,10 @@ Remember: Your primary goal is answering the user's specific question, not expla
 
     async def run(self, ctx: GraphRunContext[ChatGraphState, ChatGraphDeps]) -> End[ChatResult]:
         answer_agent = Agent(
-            f"{ctx.deps.config.llm.model_provider}:{ctx.deps.config.llm.model_name}",
+            create_pydantic_model(
+                model_provider=ctx.deps.config.llm.model_provider,
+                model_name=ctx.deps.config.llm.model_name
+            ),
             system_prompt=self.system_prompt
         )
         
@@ -267,6 +276,8 @@ async def process_chat(
         )
     except Exception as e:
         LOG.error(f"Error processing chat in graph: {e}")
+        console.print_exception()
+        
         result = ChatResult(
             answer="I encountered an error processing your question. Please try again."
         )
