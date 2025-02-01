@@ -1,6 +1,7 @@
 import gradio as gr
 from know_lang_bot.config import AppConfig
 from know_lang_bot.utils.fancy_log import FancyLogger
+from know_lang_bot.utils.rate_limiter import RateLimiter
 from know_lang_bot.chat_bot.chat_graph import stream_chat_progress, ChatStatus
 import chromadb
 from typing import List, Dict, AsyncGenerator
@@ -15,6 +16,7 @@ class CodeQAChatInterface:
         self.config = config
         self._init_chroma()
         self.codebase_dir = Path(config.db.codebase_directory)
+        self.rate_limiter = RateLimiter()
         
     def _init_chroma(self):
         """Initialize ChromaDB connection"""
@@ -57,12 +59,32 @@ class CodeQAChatInterface:
     async def stream_response(
         self,
         message: str,
-        history: List[ChatMessage]
+        history: List[ChatMessage],
+        request: gr.Request, # gradio injects the request object
     ) -> AsyncGenerator[List[ChatMessage], None]:
         """Stream chat responses with progress updates"""
         # Add user message
         history.append(ChatMessage(role="user", content=message))
         yield history
+
+        # Check rate limit before processing
+        client_ip : str = request.request.client.host
+        print(f"Client IP: {client_ip}")
+        if self.rate_limiter.check_rate_limit(client_ip):
+            wait_time = self.rate_limiter.get_remaining_time(client_ip)
+            rate_limit_message = (
+                f"Rate limit exceeded. Please wait {wait_time:.0f} seconds before sending another message."
+            )
+            history.append(ChatMessage(
+                role="assistant",
+                content=rate_limit_message,
+                metadata={
+                    "title": "⚠️ Rate Limit Warning",
+                    "status": "done"
+                }
+            ))
+            yield history
+            return
         
         current_progress: ChatMessage | None = None
         code_blocks_added = False
@@ -140,8 +162,8 @@ class CodeQAChatInterface:
                 submit = gr.Button("Submit", scale=1)
                 clear = gr.ClearButton([msg, chatbot], scale=1)
 
-            async def respond(message: str, history: List[ChatMessage]) -> AsyncGenerator[List[ChatMessage], None]:
-                async for updated_history in self.stream_response(message, history):
+            async def respond(message: str, history: List[ChatMessage], request: gr.Request) -> AsyncGenerator[List[ChatMessage], None]:
+                async for updated_history in self.stream_response(message, history, request):
                     yield updated_history
                     
             # Set up event handlers
