@@ -13,5 +13,8 @@ def create_pydantic_model(
         return model_str
     elif model_provider == ModelProvider.HUGGINGFACE:
         return HuggingFaceModel(model_name=model_name)
+    elif model_provider == ModelProvider.TESTING:
+        # should be used for testing purposes only
+        pass
     else:
         raise NotImplementedError(f"Model {model_provider}:{model_name} is not supported")

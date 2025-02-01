@@ -11,7 +11,7 @@ def config():
     """Create a test configuration"""
     with tempfile.TemporaryDirectory() as temp_dir:
         yield AppConfig(
-            llm={"model_name": "test-model", "model_provider": "test"},
+            llm={"model_name": "testing", "model_provider": "testing"},
             db={"persist_directory": Path(temp_dir), "collection_name": "test_collection"}
         )
 
@@ -85,11 +85,11 @@ def test_chromadb_initialization(mock_agent_class, config: AppConfig):
     assert new_summarizer.collection is not None
 
 @pytest.mark.asyncio
-@patch('know_lang_bot.summarizer.summarizer.ollama')
+@patch('know_lang_bot.summarizer.summarizer.generate_embedding')
 @patch('know_lang_bot.summarizer.summarizer.Agent')
 async def test_process_and_store_chunk_with_embedding(
     mock_agent_class, 
-    mock_ollama, 
+    mock_embedding_generator, 
     config: AppConfig, 
     sample_chunks: list[CodeChunk], 
     mock_run_result: Mock
@@ -100,8 +100,8 @@ async def test_process_and_store_chunk_with_embedding(
     mock_agent.run = AsyncMock(return_value=mock_run_result)
     
     # Setup mock embedding response
-    mock_embedding = {'embeddings': [0.1, 0.2, 0.3]}  # Sample embedding vector
-    mock_ollama.embed = Mock(return_value=mock_embedding)
+    mock_embedding = [0.1, 0.2, 0.3]  # Sample embedding vector
+    mock_embedding_generator.return_value = mock_embedding
     
     summarizer = CodeSummarizer(config)
     
@@ -112,9 +112,9 @@ async def test_process_and_store_chunk_with_embedding(
     await summarizer.process_and_store_chunk(sample_chunks[0])
     
     # Verify ollama.embed was called with correct parameters
-    mock_ollama.embed.assert_called_once_with(
-        model=config.embedding.model_name,
-        input=mock_run_result.data
+    mock_embedding_generator.assert_called_once_with(
+        mock_run_result.data,
+        config.embedding,
     )
     
     # Verify collection.add was called with correct parameters
@@ -123,7 +123,7 @@ async def test_process_and_store_chunk_with_embedding(
     
     kwargs = add_call[1]
     assert len(kwargs['embeddings']) == 3
-    assert kwargs['embeddings'] == mock_embedding['embeddings']
+    assert kwargs['embeddings'] == mock_embedding
     assert kwargs['documents'][0] == mock_run_result.data
     assert kwargs['ids'][0] == f"{sample_chunks[0].file_path}:{sample_chunks[0].start_line}-{sample_chunks[0].end_line}"
     

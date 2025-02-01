@@ -5,15 +5,15 @@ from typing import AsyncGenerator, List, Dict, Any, Optional
 import chromadb
 from pydantic import BaseModel
 from pydantic_graph import BaseNode, EndStep, Graph, GraphRunContext, End, HistoryStep
-import ollama
 from know_lang_bot.config import AppConfig
 from know_lang_bot.utils.fancy_log import FancyLogger
 from pydantic_ai import Agent
 import logfire
-from pprint import pformat
+from rich.pretty import Pretty
 from enum import Enum
 from rich.console import Console
 from know_lang_bot.utils.model_provider import create_pydantic_model
+from know_lang_bot.models.embeddings import generate_embedding
 
 LOG = FancyLogger(__name__)
 console = Console()
@@ -152,17 +152,17 @@ class RetrieveContextNode(BaseNode[ChatGraphState, ChatGraphDeps, ChatResult]):
     
     async def run(self, ctx: GraphRunContext[ChatGraphState, ChatGraphDeps]) -> AnswerQuestionNode:
         try:
-            embedded_question = ollama.embed(
-                model=ctx.deps.config.embedding.model_name,
-                input=ctx.state.polished_question or ctx.state.original_question
+            question_embedding = generate_embedding(
+                input=ctx.state.polished_question or ctx.state.original_question,
+                model=ctx.deps.config.embedding
             )
 
             results = ctx.deps.collection.query(
-                query_embeddings=embedded_question['embeddings'],
+                query_embeddings=question_embedding,
                 n_results=ctx.deps.config.chat.max_context_chunks,
                 include=['metadatas', 'documents', 'distances']
             )
-            logfire.debug('query result: {result}', result=pformat(results))
+            logfire.debug('query result: {result}', result=Pretty(results))
             
             relevant_chunks = []
             relevant_metadatas = []

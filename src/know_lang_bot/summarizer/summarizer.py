@@ -3,7 +3,6 @@ import chromadb
 from chromadb.errors import InvalidCollectionException
 from pydantic_ai import Agent
 from pydantic import BaseModel, Field
-import ollama
 from pprint import pformat
 from rich.progress import Progress
 
@@ -11,6 +10,7 @@ from know_lang_bot.config import AppConfig
 from know_lang_bot.core.types import CodeChunk, ModelProvider
 from know_lang_bot.utils.fancy_log import FancyLogger
 from know_lang_bot.utils.model_provider import create_pydantic_model
+from know_lang_bot.models.embeddings import generate_embedding
 
 LOG = FancyLogger(__name__)
 
@@ -76,17 +76,6 @@ Provide a clean, concise and focused summary. Don't include unnecessary nor gene
                 metadata={"hnsw:space": "cosine"}
             )
 
-    def _get_embedding(self, text: str) -> List[float]:
-        """Get embedding for text using configured provider"""
-        if self.config.embedding.provider == ModelProvider.OLLAMA:
-            response = ollama.embed(
-                model=self.config.embedding.model_name,
-                input=text
-            )
-            return response['embeddings']
-        else:
-            raise ValueError(f"Unsupported embedding provider: {self.config.embedding.provider}")
-
     async def summarize_chunk(self, chunk: CodeChunk) -> str:
         """Summarize a single code chunk using the LLM"""
         prompt = f"""
@@ -122,7 +111,7 @@ Provide a clean, concise and focused summary. Don't include unnecessary nor gene
         )
         
         # Get embedding for the summary
-        embedding = self._get_embedding(summary)
+        embedding = generate_embedding(summary, self.config.embedding)
         
         # Store in ChromaDB
         self.collection.add(

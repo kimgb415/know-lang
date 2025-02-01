@@ -24,3 +24,4 @@ class ModelProvider(str, Enum):
     ANTHROPIC = "anthropic"
     OLLAMA = "ollama"
     HUGGINGFACE = "huggingface"
+    TESTING = "testing"
