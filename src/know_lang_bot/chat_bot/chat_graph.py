@@ -154,7 +154,7 @@ class RetrieveContextNode(BaseNode[ChatGraphState, ChatGraphDeps, ChatResult]):
         try:
             question_embedding = generate_embedding(
                 input=ctx.state.polished_question or ctx.state.original_question,
-                model=ctx.deps.config.embedding
+                config=ctx.deps.config.embedding
             )
 
             results = ctx.deps.collection.query(

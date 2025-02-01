@@ -2,13 +2,19 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "Know Lang Bot",
+      "name": "Know Lang",
       "type": "debugpy",
       "request": "launch",
       "module": "know_lang_bot",
       "args": [
         "--v"
       ]
+    },
+    {
+      "name": "Know Lang ChatBot ",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/src/know_lang_bot/chat_bot/gradio_demo.py",
     }
   ]
 }

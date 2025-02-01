@@ -77,6 +77,18 @@ class EmbeddingConfig(BaseSettings):
         default_factory=dict,
         description="Provider-specific settings"
     )
+    api_key: Optional[str] = Field(
+        default=None,
+        description="API key for the model provider"
+    )
+
+    @field_validator('api_key', mode='after')
+    @classmethod
+    def validate_api_key(cls, v: Optional[str], info: ValidationInfo) -> Optional[str]:
+        """Validate API key is present when required"""
+        if info.data['provider'] in [ModelProvider.OPENAI] and not v:
+            raise ValueError(f"API key required for {info.data['provider']}")
+        return v
 
 class LLMConfig(BaseSettings):
     model_name: str = Field(

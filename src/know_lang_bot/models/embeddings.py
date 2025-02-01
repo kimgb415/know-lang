@@ -6,11 +6,6 @@ from typing import Union, List, overload
 # Type definitions
 EmbeddingVector = List[float]
 
-class EmbeddingConfig:
-    def __init__(self, provider: ModelProvider, model_name: str):
-        self.provider = provider
-        self.model_name = model_name
-
 def _process_ollama_batch(inputs: List[str], model_name: str) -> List[EmbeddingVector]:
     """Helper function to process Ollama embeddings in batch."""
     return [
@@ -60,6 +55,7 @@ def generate_embedding(
         if config.provider == ModelProvider.OLLAMA:
             embeddings = _process_ollama_batch(inputs, config.model_name)
         elif config.provider == ModelProvider.OPENAI:
+            openai.api_key = config.api_key
             embeddings = _process_openai_batch(inputs, config.model_name)
         else:
             raise ValueError(f"Unsupported provider: {config.provider}")
