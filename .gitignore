@@ -3,5 +3,3 @@ __pycache__
 .pytest_cache
 .env*
 !.env.example
-
-my_chroma_db

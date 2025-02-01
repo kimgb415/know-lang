@@ -1,1 +1,1 @@
-transformers/** filter=lfs diff=lfs merge=lfs -text
+chromadb/** filter=lfs diff=lfs merge=lfs -text
