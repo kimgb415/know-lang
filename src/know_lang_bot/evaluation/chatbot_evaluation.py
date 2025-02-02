@@ -4,7 +4,7 @@ from pydantic import BaseModel, Field
 from pydantic_ai import Agent
 from know_lang_bot.config import AppConfig
 from know_lang_bot.utils.model_provider import create_pydantic_model
-from know_lang_bot.chat_bot.chat_graph import ChatResult
+from know_lang_bot.chat_bot.chat_graph import ChatResult, process_chat
 import json
 import asyncio
 
@@ -30,9 +30,9 @@ class EvalResult(BaseModel):
     polished_question: Optional[str] = None
 
 class EvalAgentResponse(BaseModel):
-    chunk_relevance: float
-    answer_correctness: float
-    code_reference: float
+    chunk_relevance: float = Field(ge=0.0, le=10.0, description="Score for chunk relevance")
+    answer_correctness: float = Field(ge=0.0, le=10.0, description="Score for answer correctness")
+    code_reference: float = Field(ge=0.0, le=10.0, description="Score for code reference quality")
     feedback: str
 
 
@@ -46,8 +46,8 @@ class ChatBotEvaluator:
         self.config = config
         self.eval_agent = Agent(
             create_pydantic_model(
-                model_provider=config.llm.model_provider,
-                model_name=config.llm.model_name
+                model_provider=config.evaluator.model_provider,
+                model_name=config.evaluator.model_name
             ),
             system_prompt=self._build_eval_prompt(),
             result_type=EvalAgentResponse
@@ -68,7 +68,15 @@ Evaluate the response based on these specific criteria:
 3. Code Reference Quality (0-1):
 - Does it properly cite specific code locations?
 - Are code references clear and relevant?
-}"""
+
+Format your response as JSON:
+{
+    "chunk_relevance": score (from 0.0 to 10.0),
+    "answer_correctness": score (from 0.0 to 10.0),
+    "code_reference": score (from 0.0 to 10.0),
+    "feedback": "Brief explanation of scores"
+}
+"""
 
     async def evaluate_single(
         self,
@@ -84,7 +92,7 @@ Evaluate the response based on these specific criteria:
 
         # Get evaluation from the model
         result = await self.eval_agent.run(
-            json.dumps(eval_context),
+            eval_context.model_dump_json(),
         )
         metrics = result.data
 
@@ -326,7 +334,7 @@ TRANSFORMER_TRAINER_TEST_CASES = [
     )
 ]
 
-TRANSFORMER_TEST_CASES = [
+TRANSFORMER_TEST_CASES : List[EvalCase] = [
     *TRANSFORMER_QUANTIZER_BASE_CASES,
     *TRANSFORMER_QUANTIZER_AUTO_CASES,
     *TRANSFORMER_PIPELINE_BASE_TEST_CASES,
@@ -334,3 +342,23 @@ TRANSFORMER_TEST_CASES = [
     *TRANSFORMER_LOGITS_PROCESSOR_TEST_CASES,
     *TRANSFORMER_TRAINER_TEST_CASES,
 ]
+
+
+async def main():
+    from rich.console import Console
+    from rich.pretty import Pretty
+    import chromadb
+    console = Console()
+    config = AppConfig()
+    evaluator = ChatBotEvaluator(config)
+    collection = chromadb.PersistentClient(path=str(config.db.persist_directory)).get_collection(name=config.db.collection_name)
+
+    for case in TRANSFORMER_TEST_CASES:
+        chat_result = await process_chat(question=case.question, collection=collection, config=config)
+        result = await evaluator.evaluate_single(case, chat_result)
+        console.print(Pretty(result.model_dump()))
+
+        break
+
+if __name__ == "__main__":
+    asyncio.run(main())
