@@ -4,6 +4,7 @@ from pydantic import Field, field_validator, ValidationInfo
 from pathlib import Path
 import fnmatch
 from know_lang_bot.core.types import ModelProvider
+import os
 
 class PathPatterns(BaseSettings):
     include: List[str] = Field(
@@ -112,8 +113,15 @@ class LLMConfig(BaseSettings):
     @classmethod
     def validate_api_key(cls, v: Optional[str], info: ValidationInfo) -> Optional[str]:
         """Validate API key is present when required"""
-        if info.data['model_provider'] in [ModelProvider.OPENAI, ModelProvider.ANTHROPIC] and not v:
-            raise ValueError(f"API key required for {info.data['model_provider']}")
+        if info.data['model_provider'] in [ModelProvider.OPENAI, ModelProvider.ANTHROPIC]:
+            if not v:
+                raise ValueError(f"API key required for {info.data['model_provider']}")
+            elif info.data['model_provider'] == ModelProvider.ANTHROPIC:
+                os.environ["ANTHROPIC_API_KEY"] = v
+            elif info.data['model_provider'] == ModelProvider.OPENAI:
+                import openai
+                openai.api_key = v
+                
         return v
 
 class DBConfig(BaseSettings):
@@ -156,6 +164,7 @@ class AppConfig(BaseSettings):
     )
     
     llm: LLMConfig = Field(default_factory=LLMConfig)
+    evaluator: LLMConfig = Field(default_factory=LLMConfig)
     db: DBConfig = Field(default_factory=DBConfig)
     parser: ParserConfig = Field(default_factory=ParserConfig)
     chat: ChatConfig = Field(default_factory=ChatConfig)
