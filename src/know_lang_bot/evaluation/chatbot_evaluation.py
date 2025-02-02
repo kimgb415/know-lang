@@ -70,9 +70,9 @@ Evaluate the response based on these specific criteria:
 
 Format your response as JSON:
 {
-    "chunk_relevance": score (from 0.0 to 10.0),
-    "answer_correctness": score (from 0.0 to 10.0),
-    "code_reference": score (from 0.0 to 10.0),
+    "chunk_relevance": float type score (from 0.0f to 10.0f),
+    "answer_correctness": float type score (from 0.0f to 10.0f),
+    "code_reference": float type score (from 0.0f to 10.0f),
     "feedback": "Brief explanation of scores"
 }
 """
@@ -93,7 +93,12 @@ Format your response as JSON:
         result = await self.eval_agent.run(
             eval_context.model_dump_json(),
         )
-        metrics = result.data
+        eval_response : EvalAgentResponse = result.data
+        metrics = {
+            EvalMetric.CHUNK_RELEVANCE: eval_response.chunk_relevance,
+            EvalMetric.ANSWER_CORRECTNESS: eval_response.answer_correctness,
+            EvalMetric.CODE_REFERENCE: eval_response.code_reference
+        }
 
         # Calculate weighted score
         weights = {
@@ -103,7 +108,7 @@ Format your response as JSON:
         }
         
         total_score = sum(
-            metrics.model_dump()[metric] * weights[metric] * case.difficulty
+            metrics[metric] * weights[metric] * case.difficulty
             for metric in EvalMetric
         )
 
@@ -111,7 +116,7 @@ Format your response as JSON:
             case=case,
             metrics=metrics,
             total_score=total_score,
-            feedback=metrics.feedback,
+            feedback=eval_response.feedback,
         )
 
     async def evaluate_batch(
@@ -346,22 +351,36 @@ TRANSFORMER_TEST_CASES : List[EvalCase] = [
 async def main():
     from rich.console import Console
     from rich.pretty import Pretty
+    import json
     import chromadb
     console = Console()
     config = AppConfig()
     evaluator = ChatBotEvaluator(config)
     collection = chromadb.PersistentClient(path=str(config.db.persist_directory)).get_collection(name=config.db.collection_name)
 
+    final_results = []
+
     for case in TRANSFORMER_TEST_CASES:
         try:
             chat_result = await process_chat(question=case.question, collection=collection, config=config)
             result = await evaluator.evaluate_single(case, chat_result)
-            console.print(Pretty(result.model_dump()))
+            
+            # Aggregate chat_result and result into a single JSON object
+            aggregated_result = {
+                "question": case.question,
+                "chat_result": chat_result.model_dump(),
+                "evaluation_result": result.model_dump()
+            }
+            final_results.append(aggregated_result)
         
-        except Exception as e:
+        except Exception:
             console.print_exception()
+    
+    # Write the final JSON array to a file
+    with open("evaluation_results.json", "w") as f:
+        json.dump(final_results, f, indent=2)
 
-        break
+    console.print(Pretty(final_results))
 
 if __name__ == "__main__":
     asyncio.run(main())
