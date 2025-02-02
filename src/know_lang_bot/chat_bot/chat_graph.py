@@ -9,7 +9,7 @@ from know_lang_bot.config import AppConfig
 from know_lang_bot.utils.fancy_log import FancyLogger
 from pydantic_ai import Agent
 import logfire
-from rich.pretty import Pretty
+from pprint import pformat
 from enum import Enum
 from rich.console import Console
 from know_lang_bot.utils.model_provider import create_pydantic_model
@@ -162,7 +162,7 @@ class RetrieveContextNode(BaseNode[ChatGraphState, ChatGraphDeps, ChatResult]):
                 n_results=ctx.deps.config.chat.max_context_chunks,
                 include=['metadatas', 'documents', 'distances']
             )
-            logfire.debug('query result: {result}', result=Pretty(results))
+            logfire.debug('query result: {result}', result=pformat(results))
             
             relevant_chunks = []
             relevant_metadatas = []
