@@ -5,7 +5,6 @@ from pydantic_ai import Agent
 from know_lang_bot.config import AppConfig
 from know_lang_bot.utils.model_provider import create_pydantic_model
 from know_lang_bot.chat_bot.chat_graph import ChatResult, process_chat
-import json
 import asyncio
 
 class EvalMetric(str, Enum):
@@ -104,7 +103,7 @@ Format your response as JSON:
         }
         
         total_score = sum(
-            metrics[metric] * weights[metric] * case.difficulty
+            metrics.model_dump()[metric] * weights[metric] * case.difficulty
             for metric in EvalMetric
         )
 
@@ -112,7 +111,7 @@ Format your response as JSON:
             case=case,
             metrics=metrics,
             total_score=total_score,
-            feedback=metrics["feedback"]
+            feedback=metrics.feedback,
         )
 
     async def evaluate_batch(
@@ -354,9 +353,13 @@ async def main():
     collection = chromadb.PersistentClient(path=str(config.db.persist_directory)).get_collection(name=config.db.collection_name)
 
     for case in TRANSFORMER_TEST_CASES:
-        chat_result = await process_chat(question=case.question, collection=collection, config=config)
-        result = await evaluator.evaluate_single(case, chat_result)
-        console.print(Pretty(result.model_dump()))
+        try:
+            chat_result = await process_chat(question=case.question, collection=collection, config=config)
+            result = await evaluator.evaluate_single(case, chat_result)
+            console.print(Pretty(result.model_dump()))
+        
+        except Exception as e:
+            console.print_exception()
 
         break
 
