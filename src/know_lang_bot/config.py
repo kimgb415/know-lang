@@ -157,8 +157,12 @@ class RerankerConfig(BaseSettings):
         description="API key for the model provider"
     )
     top_k: int = Field(
-        default=4,
+        default=5,
         description="Number of most relevant documents to return from reranking"
+    )
+    relevance_threshold: float = Field(
+        default=0.5,
+        description="Minimum relevance score to include a document in reranking"
     )
 
     @field_validator('api_key', mode='after')

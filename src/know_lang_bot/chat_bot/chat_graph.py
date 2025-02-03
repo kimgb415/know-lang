@@ -220,7 +220,7 @@ class RetrieveContextNode(BaseNode[ChatGraphState, ChatGraphDeps, ChatResult]):
                 query=query,
                 embedding_config=ctx.deps.config.embedding,
                 collection=ctx.deps.collection,
-                n_results=min(ctx.deps.config.chat.max_context_chunks * 2, 20)
+                n_results=min(ctx.deps.config.chat.max_context_chunks * 2, 50)
             )
                 
             # Log top k initial results by distance
@@ -228,7 +228,7 @@ class RetrieveContextNode(BaseNode[ChatGraphState, ChatGraphDeps, ChatResult]):
                 zip(initial_chunks, distances),
                 key=lambda x: x[1]
             )[:ctx.deps.config.reranker.top_k]
-            logfire.info('top k initial results: {results}', results=top_k_initial)
+            logfire.info('top k embedding search results: {results}', results=top_k_initial)
             
             # Only proceed to reranking if we have initial results
             if not initial_chunks:
@@ -243,7 +243,7 @@ class RetrieveContextNode(BaseNode[ChatGraphState, ChatGraphDeps, ChatResult]):
                     chunks=initial_chunks,
                     reranker_config=ctx.deps.config.reranker
                 )
-                logfire.info('reranked results: {results}', results=reranking.results)
+                logfire.info('top k reranking search results: {results}', results=reranking.results)
                 
                 # Build final context from reranked results
                 relevant_chunks = []
@@ -251,10 +251,13 @@ class RetrieveContextNode(BaseNode[ChatGraphState, ChatGraphDeps, ChatResult]):
                 
                 for result in reranking.results:
                     # Only include if score is good enough
-                    if result.relevance_score >= ctx.deps.config.chat.similarity_threshold:
+                    if result.relevance_score >= ctx.deps.config.reranker.relevance_threshold:
                         relevant_chunks.append(result.document)
                         # Get corresponding metadata using original index
                         relevant_metadatas.append(initial_metadatas[result.index])
+                    
+                if not relevant_chunks:
+                    raise Exception("No relevant chunks found through reranking")
                 
                 
             except Exception as e:
