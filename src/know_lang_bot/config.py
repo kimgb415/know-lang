@@ -119,8 +119,7 @@ class LLMConfig(BaseSettings):
             elif info.data['model_provider'] == ModelProvider.ANTHROPIC:
                 os.environ["ANTHROPIC_API_KEY"] = v
             elif info.data['model_provider'] == ModelProvider.OPENAI:
-                import openai
-                openai.api_key = v
+                os.environ["OPENAI_API_KEY"] = v
                 
         return v
 

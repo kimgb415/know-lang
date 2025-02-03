@@ -22,6 +22,7 @@ class EvalCase(BaseModel):
 
 class EvalResult(BaseModel):
     """Evaluation result with scores and feedback"""
+    evaluator_model: str
     case: EvalCase
     metrics: Dict[EvalMetric, float]
     total_score: float
@@ -117,6 +118,7 @@ Format your response as JSON:
             metrics=metrics,
             total_score=total_score,
             feedback=eval_response.feedback,
+            evaluator_model=f"{self.config.evaluator.model_provider}:{self.config.evaluator.model_name}"
         )
 
     async def evaluate_batch(
