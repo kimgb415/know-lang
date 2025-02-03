@@ -13,7 +13,7 @@ async def test_chat_processing():
     )
     
     result = await process_chat(
-        "How does the parser handle nested classes?",
+        "How are different quantization methods implemented in the transformers library, and what are the key components required to implement a new quantization method?",
         collection,
         config
     )

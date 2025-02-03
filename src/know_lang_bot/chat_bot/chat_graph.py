@@ -5,7 +5,7 @@ from typing import AsyncGenerator, List, Dict, Any, Optional
 import chromadb
 from pydantic import BaseModel
 from pydantic_graph import BaseNode, EndStep, Graph, GraphRunContext, End, HistoryStep
-from know_lang_bot.config import AppConfig
+from know_lang_bot.config import AppConfig, RerankerConfig, EmbeddingConfig
 from know_lang_bot.utils.fancy_log import FancyLogger
 from pydantic_ai import Agent
 import logfire
@@ -14,6 +14,8 @@ from enum import Enum
 from rich.console import Console
 from know_lang_bot.utils.model_provider import create_pydantic_model
 from know_lang_bot.models.embeddings import generate_embedding
+import voyageai
+from voyageai.object.reranking import RerankingObject
 
 LOG = FancyLogger(__name__)
 console = Console()
@@ -148,41 +150,132 @@ Focus on making the question more searchable while preserving its original inten
 
 @dataclass
 class RetrieveContextNode(BaseNode[ChatGraphState, ChatGraphDeps, ChatResult]):
-    """Node that retrieves relevant code context"""
+    """Node that retrieves relevant code context using hybrid search: embeddings + reranking"""
+    async def _get_initial_chunks(
+        self, 
+        query: str,
+        embedding_config: EmbeddingConfig,
+        collection: chromadb.Collection,
+        n_results: int
+    ) -> tuple[List[str], List[Dict], List[float]]:
+        """Get initial chunks using embedding search"""
+        question_embedding = generate_embedding(
+            input=query,
+            config=embedding_config
+        )
+        
+        results = collection.query(
+            query_embeddings=question_embedding,
+            n_results=n_results,
+            include=['metadatas', 'documents', 'distances']
+        )
+        
+        return (
+            results['documents'][0],
+            results['metadatas'][0],
+            results['distances'][0]
+        )
+
+    async def _rerank_chunks(
+        self,
+        query: str,
+        chunks: List[str],
+        reranker_config: RerankerConfig,
+    ) -> RerankingObject:
+        """Rerank chunks using Voyage AI"""
+        voyage_client = voyageai.Client()
+        return voyage_client.rerank(
+            query=query,
+            documents=chunks,
+            model=reranker_config.model_name,
+            top_k=reranker_config.top_k,
+            truncation=True
+        )
+
+    def _filter_by_distance(
+        self,
+        chunks: List[str],
+        metadatas: List[Dict],
+        distances: List[float],
+        threshold: float
+    ) -> tuple[List[str], List[Dict]]:
+        """Filter chunks by distance threshold"""
+        filtered_chunks = []
+        filtered_metadatas = []
+        
+        for chunk, meta, dist in zip(chunks, metadatas, distances):
+            if dist <= threshold:
+                filtered_chunks.append(chunk)
+                filtered_metadatas.append(meta)
+                
+        return filtered_chunks, filtered_metadatas
     
     async def run(self, ctx: GraphRunContext[ChatGraphState, ChatGraphDeps]) -> AnswerQuestionNode:
         try:
-            question_embedding = generate_embedding(
-                input=ctx.state.polished_question or ctx.state.original_question,
-                config=ctx.deps.config.embedding
-            )
-
-            results = ctx.deps.collection.query(
-                query_embeddings=question_embedding,
-                n_results=ctx.deps.config.chat.max_context_chunks,
-                include=['metadatas', 'documents', 'distances']
-            )
-            logfire.debug('query result: {result}', result=pformat(results))
+            # Get query
+            query = ctx.state.polished_question or ctx.state.original_question
             
-            relevant_chunks = []
-            relevant_metadatas = []
+            # First pass: Get more candidates using embedding search
+            initial_chunks, initial_metadatas, distances = await self._get_initial_chunks(
+                query=query,
+                embedding_config=ctx.deps.config.embedding,
+                collection=ctx.deps.collection,
+                n_results=min(ctx.deps.config.chat.max_context_chunks * 2, 20)
+            )
+                
+            # Log top k initial results by distance
+            top_k_initial = sorted(
+                zip(initial_chunks, distances),
+                key=lambda x: x[1]
+            )[:ctx.deps.config.reranker.top_k]
+            logfire.info('top k initial results: {results}', results=top_k_initial)
             
-            for doc, meta, dist in zip(
-                results['documents'][0],
-                results['metadatas'][0],
-                results['distances'][0]
-            ):
-                if dist <= ctx.deps.config.chat.similarity_threshold:
-                    relevant_chunks.append(doc)
-                    relevant_metadatas.append(meta)
+            # Only proceed to reranking if we have initial results
+            if not initial_chunks:
+                LOG.warning("No initial chunks found through embedding search")
+                raise Exception("No chunks found through embedding search")
 
+            # Second pass: Rerank the candidates
+            try:
+                # Second pass: Rerank candidates
+                reranking = await self._rerank_chunks(
+                    query=query,
+                    chunks=initial_chunks,
+                    reranker_config=ctx.deps.config.reranker
+                )
+                logfire.info('reranked results: {results}', results=reranking.results)
+                
+                # Build final context from reranked results
+                relevant_chunks = []
+                relevant_metadatas = []
+                
+                for result in reranking.results:
+                    # Only include if score is good enough
+                    if result.relevance_score >= ctx.deps.config.chat.similarity_threshold:
+                        relevant_chunks.append(result.document)
+                        # Get corresponding metadata using original index
+                        relevant_metadatas.append(initial_metadatas[result.index])
+                
+                
+            except Exception as e:
+                # Fallback to distance-based filtering if reranking fails
+                LOG.error(f"Reranking failed, falling back to distance-based filtering: {e}")
+                relevant_chunks, relevant_metadatas = self._filter_by_distance(
+                    chunks=initial_chunks,
+                    metadatas=initial_metadatas,
+                    distances=distances,
+                    threshold=ctx.deps.config.chat.similarity_threshold
+                )
+            
             ctx.state.retrieved_context = RetrievedContext(
                 chunks=relevant_chunks,
                 metadatas=relevant_metadatas,
             )
             
         except Exception as e:
-            LOG.error(f"Error retrieving context: {e}")
+            LOG.error(f"Error in context retrieval: {e}")
+            ctx.state.retrieved_context = RetrievedContext(chunks=[], metadatas=[])
+        
         finally:
             return AnswerQuestionNode()
 

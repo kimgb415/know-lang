@@ -52,13 +52,13 @@ def generate_embedding(
     inputs = [input] if is_single_input else input
 
     try:
-        if config.provider == ModelProvider.OLLAMA:
+        if config.model_provider == ModelProvider.OLLAMA:
             embeddings = _process_ollama_batch(inputs, config.model_name)
-        elif config.provider == ModelProvider.OPENAI:
+        elif config.model_provider == ModelProvider.OPENAI:
             openai.api_key = config.api_key
             embeddings = _process_openai_batch(inputs, config.model_name)
         else:
-            raise ValueError(f"Unsupported provider: {config.provider}")
+            raise ValueError(f"Unsupported provider: {config.model_provider}")
 
         # Return single embedding for single input
         return embeddings[0] if is_single_input else embeddings

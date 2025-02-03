@@ -6,6 +6,24 @@ import fnmatch
 from know_lang_bot.core.types import ModelProvider
 import os
 
+def _validate_api_key(v: Optional[str], info: ValidationInfo) -> Optional[str]:
+    """Validate API key is present when required"""
+    if info.data['model_provider'] in [
+        ModelProvider.OPENAI, 
+        ModelProvider.ANTHROPIC,
+        ModelProvider.VOYAGE
+    ]:
+        if not v:
+            raise ValueError(f"API key required for {info.data['model_provider']}")
+        elif info.data['model_provider'] == ModelProvider.ANTHROPIC:
+            os.environ["ANTHROPIC_API_KEY"] = v
+        elif info.data['model_provider'] == ModelProvider.OPENAI:
+            os.environ["OPENAI_API_KEY"] = v
+        elif info.data['model_provider'] == ModelProvider.VOYAGE:
+            os.environ["VOYAGE_API_KEY"] = v
+            
+    return v
+
 class PathPatterns(BaseSettings):
     include: List[str] = Field(
         default=["**/*"],
@@ -66,7 +84,7 @@ class EmbeddingConfig(BaseSettings):
         default="mxbai-embed-large",
         description="Name of the embedding model"
     )
-    provider: ModelProvider = Field(
+    model_provider: ModelProvider = Field(
         default=ModelProvider.OLLAMA,
         description="Provider for embeddings"
     )
@@ -86,10 +104,7 @@ class EmbeddingConfig(BaseSettings):
     @field_validator('api_key', mode='after')
     @classmethod
     def validate_api_key(cls, v: Optional[str], info: ValidationInfo) -> Optional[str]:
-        """Validate API key is present when required"""
-        if info.data['provider'] in [ModelProvider.OPENAI] and not v:
-            raise ValueError(f"API key required for {info.data['provider']}")
-        return v
+        return _validate_api_key(v, info)
 
 class LLMConfig(BaseSettings):
     model_name: str = Field(
@@ -112,16 +127,7 @@ class LLMConfig(BaseSettings):
     @field_validator('api_key', mode='after')
     @classmethod
     def validate_api_key(cls, v: Optional[str], info: ValidationInfo) -> Optional[str]:
-        """Validate API key is present when required"""
-        if info.data['model_provider'] in [ModelProvider.OPENAI, ModelProvider.ANTHROPIC]:
-            if not v:
-                raise ValueError(f"API key required for {info.data['model_provider']}")
-            elif info.data['model_provider'] == ModelProvider.ANTHROPIC:
-                os.environ["ANTHROPIC_API_KEY"] = v
-            elif info.data['model_provider'] == ModelProvider.OPENAI:
-                os.environ["OPENAI_API_KEY"] = v
-                
-        return v
+        return _validate_api_key(v, info)
 
 class DBConfig(BaseSettings):
     persist_directory: Path = Field(
@@ -136,6 +142,29 @@ class DBConfig(BaseSettings):
         default=Path("./"),
         description="Root directory of the codebase to analyze"
     )
+
+class RerankerConfig(BaseSettings):
+    model_name: str = Field(
+        default="reranker",
+        description="Name of the reranker model to use"
+    )
+    model_provider: str = Field(
+        default=ModelProvider.OLLAMA,
+        description="Model provider (anthropic, openai, ollama, etc)"
+    )
+    api_key: Optional[str] = Field(
+        default=None,
+        description="API key for the model provider"
+    )
+    top_k: int = Field(
+        default=4,
+        description="Number of most relevant documents to return from reranking"
+    )
+
+    @field_validator('api_key', mode='after')
+    @classmethod
+    def validate_api_key(cls, v: Optional[str], info: ValidationInfo) -> Optional[str]:
+        return _validate_api_key(v, info)
 
 class ChatConfig(BaseSettings):
     max_context_chunks: int = Field(
@@ -164,6 +193,7 @@ class AppConfig(BaseSettings):
     
     llm: LLMConfig = Field(default_factory=LLMConfig)
     evaluator: LLMConfig = Field(default_factory=LLMConfig)
+    reranker: RerankerConfig = Field(default_factory=RerankerConfig)
     db: DBConfig = Field(default_factory=DBConfig)
     parser: ParserConfig = Field(default_factory=ParserConfig)
     chat: ChatConfig = Field(default_factory=ChatConfig)
