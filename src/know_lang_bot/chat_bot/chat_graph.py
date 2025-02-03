@@ -237,6 +237,9 @@ class RetrieveContextNode(BaseNode[ChatGraphState, ChatGraphDeps, ChatResult]):
 
             # Second pass: Rerank the candidates
             try:
+                if not ctx.deps.config.reranker.enabled:
+                    raise Exception("Reranker is disabled")
+                
                 # Second pass: Rerank candidates
                 reranking = await self._rerank_chunks(
                     query=query,
