@@ -1,6 +1,6 @@
 from typing import List, Dict, Optional
 from enum import Enum
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, computed_field
 from pydantic_ai import Agent
 from know_lang_bot.config import AppConfig
 from know_lang_bot.utils.model_provider import create_pydantic_model
@@ -20,23 +20,40 @@ class EvalCase(BaseModel):
     expected_code_refs: List[str] = Field(description="Code references that should be mentioned")
     difficulty: int = Field(ge=1, le=3, description="1: Easy, 2: Medium, 3: Hard")
 
+
+class MetricScores(BaseModel):
+    chunk_relevance: float = Field(ge=0.0, le=10.0, description="Score for chunk relevance")
+    answer_correctness: float = Field(ge=0.0, le=10.0, description="Score for answer correctness")
+    code_reference: float = Field(ge=0.0, le=10.0, description="Score for code reference quality")
+
+    @computed_field
+    def weighted_total(self) -> float:
+        """Calculate weighted total score"""
+        weights = {
+            "chunk_relevance": 0.4,
+            "answer_correctness": 0.4,
+            "code_reference": 0.2
+        }
+        return sum(
+            getattr(self, metric) * weight 
+            for metric, weight in weights.items()
+        )
+
+class EvalAgentResponse(MetricScores):
+    """Raw response from evaluation agent"""
+    feedback: str
+
 class EvalResult(BaseModel):
     """Evaluation result with scores and feedback"""
     evaluator_model: str
     case: EvalCase
-    metrics: Dict[EvalMetric, float]
-    total_score: float
-    feedback: str
-    polished_question: Optional[str] = None
-
-class EvalAgentResponse(BaseModel):
-    chunk_relevance: float = Field(ge=0.0, le=10.0, description="Score for chunk relevance")
-    answer_correctness: float = Field(ge=0.0, le=10.0, description="Score for answer correctness")
-    code_reference: float = Field(ge=0.0, le=10.0, description="Score for code reference quality")
-    feedback: str
-
+    eval_response: EvalAgentResponse
 
 class ChatBotEvaluationContext(EvalCase, ChatResult):
+    pass
+
+class EvalSummary(EvalResult, ChatResult):
+    """Evaluation summary with chat and evaluation results"""
     pass
 
     
@@ -95,29 +112,10 @@ Format your response as JSON:
             eval_context.model_dump_json(),
         )
         eval_response : EvalAgentResponse = result.data
-        metrics = {
-            EvalMetric.CHUNK_RELEVANCE: eval_response.chunk_relevance,
-            EvalMetric.ANSWER_CORRECTNESS: eval_response.answer_correctness,
-            EvalMetric.CODE_REFERENCE: eval_response.code_reference
-        }
-
-        # Calculate weighted score
-        weights = {
-            EvalMetric.CHUNK_RELEVANCE: 0.4,
-            EvalMetric.ANSWER_CORRECTNESS: 0.4,
-            EvalMetric.CODE_REFERENCE: 0.2
-        }
-        
-        total_score = sum(
-            metrics[metric] * weights[metric] * case.difficulty
-            for metric in EvalMetric
-        )
 
         return EvalResult(
             case=case,
-            metrics=metrics,
-            total_score=total_score,
-            feedback=eval_response.feedback,
+            eval_response=eval_response,
             evaluator_model=f"{self.config.evaluator.model_provider}:{self.config.evaluator.model_name}"
         )
 
@@ -360,29 +358,29 @@ async def main():
     evaluator = ChatBotEvaluator(config)
     collection = chromadb.PersistentClient(path=str(config.db.persist_directory)).get_collection(name=config.db.collection_name)
 
-    final_results = []
+    summary_list : List[EvalSummary] = []
 
     for case in TRANSFORMER_TEST_CASES:
         try:
-            chat_result = await process_chat(question=case.question, collection=collection, config=config)
-            result = await evaluator.evaluate_single(case, chat_result)
+            chat_result : ChatResult = await process_chat(question=case.question, collection=collection, config=config)
+            result : EvalResult = await evaluator.evaluate_single(case, chat_result)
             
-            # Aggregate chat_result and result into a single JSON object
-            aggregated_result = {
-                "question": case.question,
-                "chat_result": chat_result.model_dump(),
-                "evaluation_result": result.model_dump()
-            }
-            final_results.append(aggregated_result)
-        
+            eval_summary = EvalSummary(
+                **chat_result.model_dump(),
+                **result.model_dump()
+            )
+            summary_list.append(eval_summary)
+
         except Exception:
             console.print_exception()
     
     # Write the final JSON array to a file
     with open("evaluation_results.json", "w") as f:
-        json.dump(final_results, f, indent=2)
+        json_list = [summary.model_dump() for summary in summary_list]
+        json.dump(json_list, f, indent=2)
 
-    console.print(Pretty(final_results))
+
+    console.print(Pretty(summary_list))
 
 if __name__ == "__main__":
     asyncio.run(main())
