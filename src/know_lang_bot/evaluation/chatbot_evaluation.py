@@ -6,6 +6,8 @@ from know_lang_bot.config import AppConfig
 from know_lang_bot.utils.model_provider import create_pydantic_model
 from know_lang_bot.chat_bot.chat_graph import ChatResult, process_chat
 import asyncio
+import datetime
+from pathlib import Path
 
 class EvalMetric(str, Enum):
     CHUNK_RELEVANCE = "chunk_relevance"
@@ -375,7 +377,10 @@ async def main():
             console.print_exception()
     
     # Write the final JSON array to a file
-    with open("evaluation_results.json", "w") as f:
+    
+    current_date = datetime.datetime.now().strftime("%Y%m%d")
+    file_name = Path("evaluations", f"transformers_{config.evaluator.model_provider}_evaluation_results_{current_date}.json")
+    with open(file_name, "w") as f:
         json_list = [summary.model_dump() for summary in summary_list]
         json.dump(json_list, f, indent=2)
 
