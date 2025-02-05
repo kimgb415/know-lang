@@ -373,6 +373,9 @@ async def main():
             )
             summary_list.append(eval_summary)
 
+            import time
+            time.sleep(5) # Sleep for 5 seconds to avoid rate limiting
+
         except Exception:
             console.print_exception()
     

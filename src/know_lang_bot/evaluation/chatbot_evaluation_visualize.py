@@ -10,7 +10,8 @@ from know_lang_bot.evaluation.chatbot_evaluation import EvalSummary
 class RetrievalMethod(str, Enum):
     EMBEDDING = "embedding"
     EMBEDDING_RERANKING = "embedding_reranking"
-    EMBEDDING_WITH_CODE = "embedding_reranking_with_code"
+    EMBEDDING_WITH_CODE = "embedding_with_code"
+    EMBEDDING_RERANKING_WITH_CODE = "embedding_reranking_with_code"
 
 class ResultAnalyzer:
     def __init__(self, base_dir: Path, baseline_method: RetrievalMethod = RetrievalMethod.EMBEDDING):
@@ -21,7 +22,8 @@ class ResultAnalyzer:
         self.method_dirs = {
             RetrievalMethod.EMBEDDING: self.base_dir / RetrievalMethod.EMBEDDING.value,
             RetrievalMethod.EMBEDDING_RERANKING: self.base_dir / RetrievalMethod.EMBEDDING_RERANKING.value,
-            RetrievalMethod.EMBEDDING_WITH_CODE: self.base_dir / RetrievalMethod.EMBEDDING_WITH_CODE.value
+            RetrievalMethod.EMBEDDING_WITH_CODE: self.base_dir / RetrievalMethod.EMBEDDING_WITH_CODE.value,
+            RetrievalMethod.EMBEDDING_RERANKING_WITH_CODE: self.base_dir / RetrievalMethod.EMBEDDING_RERANKING_WITH_CODE.value,
         }
 
     def load_results(self, file_path: Path) -> List[EvalSummary]:
