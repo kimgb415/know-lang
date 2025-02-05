@@ -161,7 +161,7 @@ class RerankerConfig(BaseSettings):
         description="API key for the model provider"
     )
     top_k: int = Field(
-        default=5,
+        default=4,
         description="Number of most relevant documents to return from reranking"
     )
     relevance_threshold: float = Field(

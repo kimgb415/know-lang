@@ -229,6 +229,7 @@ class RetrieveContextNode(BaseNode[ChatGraphState, ChatGraphDeps, ChatResult]):
                 key=lambda x: x[1]
             )[:ctx.deps.config.reranker.top_k]
             logfire.info('top k embedding search results: {results}', results=top_k_initial)
+            top_k_initial_chunks = [chunk for chunk, _ in top_k_initial]
             
             # Only proceed to reranking if we have initial results
             if not initial_chunks:
@@ -267,7 +268,7 @@ class RetrieveContextNode(BaseNode[ChatGraphState, ChatGraphDeps, ChatResult]):
                 # Fallback to distance-based filtering if reranking fails
                 LOG.error(f"Reranking failed, falling back to distance-based filtering: {e}")
                 relevant_chunks, relevant_metadatas = self._filter_by_distance(
-                    chunks=initial_chunks,
+                    chunks=top_k_initial_chunks,
                     metadatas=initial_metadatas,
                     distances=distances,
                     threshold=ctx.deps.config.chat.similarity_threshold
