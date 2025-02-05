@@ -145,7 +145,7 @@ class DBConfig(BaseSettings):
 
 class RerankerConfig(BaseSettings):
     enabled: bool = Field(
-        default=True,
+        default=False,
         description="Enable reranking"
     )
     model_name: str = Field(
