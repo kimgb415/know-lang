@@ -13,6 +13,7 @@ from pprint import pformat
 from enum import Enum
 from rich.console import Console
 from know_lang_bot.utils.model_provider import create_pydantic_model
+from know_lang_bot.utils.chunking_util import truncate_chunk
 from know_lang_bot.models.embeddings import generate_embedding
 import voyageai
 from voyageai.object.reranking import RerankingObject
@@ -324,16 +325,16 @@ Remember: Your primary goal is answering the user's specific question, not expla
             ))
 
         context = ctx.state.retrieved_context
+        for chunk in context.chunks:
+            chunk = truncate_chunk(chunk, ctx.deps.config.chat.max_length_per_chunk)
+
         prompt = f"""
 Question: {ctx.state.original_question}
 
 Relevant Code Context:
 {context.chunks}
 
-Provide a focused answer to the question above. Structure your response as:
-1. Direct Answer: Start with a clear, concise answer to the question
-2. Supporting Evidence: Reference specific code with file locations
-3. Limitations (if any): Note any missing context or uncertainties
+Provide a focused answer to the question based on the provided context.
 
 Important: Stay focused on answering the specific question asked.
         """

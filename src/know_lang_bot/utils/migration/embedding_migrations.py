@@ -5,18 +5,17 @@ import chromadb
 from chromadb.errors import InvalidCollectionException
 from rich.progress import Progress
 from rich.console import Console
-from typing import List, Dict, Any, Optional
-import openai
+from typing import List, Dict, Optional
 from openai import OpenAI
 from datetime import datetime
 from know_lang_bot.config import AppConfig
 from know_lang_bot.utils.fancy_log import FancyLogger
+from know_lang_bot.utils.chunking_util import truncate_chunk
 
 LOG = FancyLogger(__name__)
 console = Console()
 
 BATCH_SIZE = 2000  # Max items per batch
-MAX_CHARS_PER_CHUNK = 10000  # Approximate 8k tokens limit (very rough estimate)
 
 class BatchState:
     """Class to track batch processing state"""
@@ -35,31 +34,7 @@ class BatchState:
         with open(self.metadata_dir / f"{batch_id}.json", "w") as f:
             json.dump(metadata, f, indent=2)
 
-def truncate_chunk(text: str, max_chars: int = MAX_CHARS_PER_CHUNK) -> str:
-    """Truncate text to approximate token limit while preserving structure"""
-    if len(text) <= max_chars:
-        return text
-    
-    # Split into CODE and SUMMARY sections
-    parts = text.split("\nSUMMARY:\n")
-    if len(parts) != 2:
-        # If structure not found, just truncate
-        return text[:max_chars]
-    
-    code, summary = parts
-    
-    # Calculate available space for each section (proportionally)
-    total_len = len(code) + len(summary)
-    code_ratio = len(code) / total_len
-    
-    # Allocate characters proportionally
-    code_chars = int(max_chars * code_ratio)
-    summary_chars = max_chars - code_chars
-    
-    truncated_code = code[:code_chars]
-    truncated_summary = summary[:summary_chars]
-    
-    return f"{truncated_code}\nSUMMARY:\n{truncated_summary}"
+
 
 async def prepare_batches(config: AppConfig, batch_state: BatchState) -> List[str]:
     """Prepare batch files from ChromaDB and return batch IDs"""
