@@ -3,11 +3,13 @@ from enum import Enum
 from pydantic import BaseModel, Field, computed_field
 from pydantic_ai import Agent
 from know_lang_bot.config import AppConfig
+from know_lang_bot.utils.chunking_util import truncate_chunk
 from know_lang_bot.utils.model_provider import create_pydantic_model
 from know_lang_bot.chat_bot.chat_graph import ChatResult, process_chat
 import asyncio
 import datetime
 from pathlib import Path
+import json
 
 class EvalMetric(str, Enum):
     CHUNK_RELEVANCE = "chunk_relevance"
@@ -141,6 +143,10 @@ Format your response as JSON:
         )
 
         for round_id in range(num_rounds):
+            # truncate chunks to avoid long text
+            for chunk in eval_context.retrieved_context.chunks:
+                chunk = truncate_chunk(chunk)
+
             # Get evaluation from the model
             result = await self.eval_agent.run(
                 eval_context.model_dump_json(),
@@ -372,11 +378,15 @@ TRANSFORMER_TEST_CASES : List[EvalCase] = [
     *TRANSFORMER_TRAINER_TEST_CASES,
 ]
 
+class DateTimeEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, datetime.datetime):
+            return obj.isoformat()
+        return super().default(obj)
 
 async def main():
     from rich.console import Console
     from rich.pretty import Pretty
-    import json
     import chromadb
     console = Console()
     config = AppConfig()
@@ -388,7 +398,7 @@ async def main():
     for case in TRANSFORMER_TEST_CASES:
         try:
             chat_result : ChatResult = await process_chat(question=case.question, collection=collection, config=config)
-            result : EvalResult = await evaluator.evaluate_single(case, chat_result)
+            result : EvalResult = await evaluator.evaluate_single(case, chat_result, config.evaluator.evaluation_rounds)
             
             eval_summary = EvalSummary(
                 **chat_result.model_dump(),
@@ -397,18 +407,17 @@ async def main():
             summary_list.append(eval_summary)
 
             import time
-            time.sleep(3) # Sleep for 5 seconds to avoid rate limiting
+            time.sleep(3) # Sleep to avoid rate limiting
 
         except Exception:
             console.print_exception()
     
     # Write the final JSON array to a file
-    
     current_date = datetime.datetime.now().strftime("%Y%m%d")
     file_name = Path("evaluations", f"transformers_{config.evaluator.model_provider}_evaluation_results_{current_date}.json")
     with open(file_name, "w") as f:
         json_list = [summary.model_dump() for summary in summary_list]
-        json.dump(json_list, f, indent=2)
+        json.dump(json_list, f, indent=2, cls=DateTimeEncoder)
 
 
     console.print(Pretty(summary_list))
