@@ -14,7 +14,7 @@ from enum import Enum
 from rich.console import Console
 from know_lang_bot.utils.model_provider import create_pydantic_model
 from know_lang_bot.utils.chunking_util import truncate_chunk
-from know_lang_bot.models.embeddings import generate_embedding
+from know_lang_bot.models.embeddings import EmbeddingInputType, generate_embedding
 import voyageai
 from voyageai.object.reranking import RerankingObject
 
@@ -162,7 +162,8 @@ class RetrieveContextNode(BaseNode[ChatGraphState, ChatGraphDeps, ChatResult]):
         """Get initial chunks using embedding search"""
         question_embedding = generate_embedding(
             input=query,
-            config=embedding_config
+            config=embedding_config,
+            input_type=EmbeddingInputType.QUERY
         )
         
         results = collection.query(

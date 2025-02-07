@@ -1,10 +1,19 @@
 import ollama
 import openai
+import voyageai
+import voyageai.client
 from know_lang_bot.config import EmbeddingConfig, ModelProvider
-from typing import Union, List, overload
+from typing import Union, List, overload, Optional
+from enum import Enum
 
 # Type definitions
 EmbeddingVector = List[float]
+
+
+class EmbeddingInputType(Enum):
+    DOCUMENT = "document"
+    QUERY = "query"
+
 
 def _process_ollama_batch(inputs: List[str], model_name: str) -> List[EmbeddingVector]:
     """Helper function to process Ollama embeddings in batch."""
@@ -19,6 +28,12 @@ def _process_openai_batch(inputs: List[str], model_name: str) -> List[EmbeddingV
     )
     return [item.embedding for item in response.data]
 
+def _process_voiage_batch(inputs: List[str], model_name: str, input_type:EmbeddingInputType) -> List[EmbeddingVector]:
+    """Helper function to process VoyageAI embeddings in batch."""
+    vo = voyageai.Client()
+    embeddings_obj = vo.embed(model=model_name, texts=inputs, input_type=input_type.value)
+    return embeddings_obj.embeddings
+
 @overload
 def generate_embedding(input: str, config: EmbeddingConfig) -> EmbeddingVector: ...
 
@@ -27,7 +42,8 @@ def generate_embedding(input: List[str], config: EmbeddingConfig) -> List[Embedd
 
 def generate_embedding(
     input: Union[str, List[str]], 
-    config: EmbeddingConfig
+    config: EmbeddingConfig,
+    input_type: Optional[EmbeddingInputType] = EmbeddingInputType.DOCUMENT
 ) -> Union[EmbeddingVector, List[EmbeddingVector]]:
     """
     Generate embeddings for single text input or batch of texts.
@@ -54,8 +70,9 @@ def generate_embedding(
         if config.model_provider == ModelProvider.OLLAMA:
             embeddings = _process_ollama_batch(inputs, config.model_name)
         elif config.model_provider == ModelProvider.OPENAI:
-            openai.api_key = config.api_key
             embeddings = _process_openai_batch(inputs, config.model_name)
+        elif config.model_provider == ModelProvider.VOYAGE:
+            embeddings = _process_voiage_batch(inputs, config.model_name, input_type)
         else:
             raise ValueError(f"Unsupported provider: {config.model_provider}")
 

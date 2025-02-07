@@ -10,7 +10,7 @@ from know_lang_bot.chat_bot.chat_graph import ChatResult
 from know_lang_bot.config import AppConfig, EmbeddingConfig
 import json
 from know_lang_bot.evaluation.chatbot_evaluation import EvalCase, TRANSFORMER_TEST_CASES
-from know_lang_bot.models.embeddings import generate_embedding, EmbeddingVector
+from know_lang_bot.models.embeddings import EmbeddingInputType, generate_embedding, EmbeddingVector
 
 @dataclass
 class ConfigEvalResult:
@@ -65,7 +65,7 @@ async def analyze_embedding_distributions(
             # Generate embeddings for all test cases
             questions = [case.question for case in test_cases]
             try:
-                embeddings = generate_embedding(questions, config.embedding)
+                embeddings = generate_embedding(questions, config.embedding, input_type=EmbeddingInputType.QUERY)
                 
                 # Cache the embeddings
                 cached_embeddings = {
