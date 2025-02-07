@@ -8,9 +8,8 @@ EmbeddingVector = List[float]
 
 def _process_ollama_batch(inputs: List[str], model_name: str) -> List[EmbeddingVector]:
     """Helper function to process Ollama embeddings in batch."""
-    return [
-        ollama.embed(model=model_name, input=inputs)['embeddings']
-    ]
+    return ollama.embed(model=model_name, input=inputs)['embeddings']
+    
 
 def _process_openai_batch(inputs: List[str], model_name: str) -> List[EmbeddingVector]:
     """Helper function to process OpenAI embeddings in batch."""
