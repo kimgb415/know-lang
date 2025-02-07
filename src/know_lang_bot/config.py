@@ -196,6 +196,12 @@ class ChatConfig(BaseSettings):
         description="Maximum number of characters per chunk"
     )
 
+class EvaluatorConfig(LLMConfig):
+    evaluation_rounds: int = Field(
+        default=1,
+        description="Number of evaluation rounds per test case"
+    )
+
 class AppConfig(BaseSettings):
     model_config = SettingsConfigDict(
         env_file='.env',
@@ -204,7 +210,7 @@ class AppConfig(BaseSettings):
     )
     
     llm: LLMConfig = Field(default_factory=LLMConfig)
-    evaluator: LLMConfig = Field(default_factory=LLMConfig)
+    evaluator: EvaluatorConfig = Field(default_factory=EvaluatorConfig)
     reranker: RerankerConfig = Field(default_factory=RerankerConfig)
     db: DBConfig = Field(default_factory=DBConfig)
     parser: ParserConfig = Field(default_factory=ParserConfig)
