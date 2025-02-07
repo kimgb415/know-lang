@@ -1,4 +1,4 @@
-from typing import List, Dict, Optional
+from typing import List
 from enum import Enum
 from pydantic import BaseModel, Field, computed_field
 from pydantic_ai import Agent
@@ -45,11 +45,40 @@ class EvalAgentResponse(MetricScores):
     """Raw response from evaluation agent"""
     feedback: str
 
+class EvalRound(BaseModel):
+    """Single evaluation round results"""
+    round_id: int
+    eval_response: EvalAgentResponse
+    timestamp: datetime.datetime
+
 class EvalResult(BaseModel):
-    """Evaluation result with scores and feedback"""
+    """Extended evaluation result with multiple rounds"""
     evaluator_model: str
     case: EvalCase
-    eval_response: EvalAgentResponse
+    eval_rounds: List[EvalRound]
+
+    @computed_field
+    def aggregated_scores(self) -> MetricScores:
+        """Calculate mean scores across rounds"""
+        chunk_relevance = EvalMetric.CHUNK_RELEVANCE.value
+        answer_correctness = EvalMetric.ANSWER_CORRECTNESS.value
+        code_reference = EvalMetric.CODE_REFERENCE.value
+
+        scores = {
+            chunk_relevance: [],
+            answer_correctness: [],
+            code_reference: []
+        }
+        
+        for round in self.eval_rounds:
+            for metric in scores.keys():
+                scores[metric].append(getattr(round.eval_response, metric))
+        
+        return MetricScores(
+            chunk_relevance=sum(scores[chunk_relevance]) / len(self.eval_rounds),
+            answer_correctness=sum(scores[answer_correctness]) / len(self.eval_rounds),
+            code_reference=sum(scores[code_reference]) / len(self.eval_rounds)
+        )
 
 class ChatBotEvaluationContext(EvalCase, ChatResult):
     pass
@@ -100,44 +129,38 @@ Format your response as JSON:
     async def evaluate_single(
         self,
         case: EvalCase,
-        chat_result: ChatResult
+        chat_result: ChatResult,
+        num_rounds: int = 1,
     ) -> EvalResult:
-        """Evaluate a single case"""
+        """Evaluate a single case for multiple rounds"""
+        eval_rounds = []
         # Prepare evaluation context
         eval_context = ChatBotEvaluationContext(
             **case.model_dump(),
             **chat_result.model_dump()
         )
 
-        # Get evaluation from the model
-        result = await self.eval_agent.run(
-            eval_context.model_dump_json(),
-        )
-        eval_response : EvalAgentResponse = result.data
+        for round_id in range(num_rounds):
+            # Get evaluation from the model
+            result = await self.eval_agent.run(
+                eval_context.model_dump_json(),
+            )
+            
+            eval_rounds.append(EvalRound(
+                round_id=round_id,
+                eval_response=result.data,
+                timestamp=datetime.datetime.now()
+            ))
+            
+            # Add delay between rounds to avoid rate limits
+            await asyncio.sleep(2)
 
         return EvalResult(
             case=case,
-            eval_response=eval_response,
+            eval_rounds=eval_rounds,
             evaluator_model=f"{self.config.evaluator.model_provider}:{self.config.evaluator.model_name}"
         )
 
-    async def evaluate_batch(
-        self,
-        cases: List[EvalCase],
-        process_chat_func,
-        max_concurrent: int = 2
-    ) -> List[EvalResult]:
-        """Run evaluation on multiple cases with concurrency control"""
-        semaphore = asyncio.Semaphore(max_concurrent)
-        
-        async def eval_single_with_limit(case: EvalCase) -> EvalResult:
-            async with semaphore:
-                chat_result = await process_chat_func(case.question)
-                return await self.evaluate_single(case, chat_result)
-
-        return await asyncio.gather(
-            *[eval_single_with_limit(case) for case in cases]
-        )
 
 # src/transformers/quantizers/base.py
 TRANSFORMER_QUANTIZER_BASE_CASES = [
@@ -374,7 +397,7 @@ async def main():
             summary_list.append(eval_summary)
 
             import time
-            time.sleep(5) # Sleep for 5 seconds to avoid rate limiting
+            time.sleep(3) # Sleep for 5 seconds to avoid rate limiting
 
         except Exception:
             console.print_exception()

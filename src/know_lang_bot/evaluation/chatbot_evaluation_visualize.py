@@ -11,6 +11,7 @@ class RetrievalMethod(str, Enum):
     EMBEDDING = "embedding"
     EMBEDDING_RERANKING = "embedding_reranking"
     EMBEDDING_WITH_CODE = "embedding_with_code"
+    OPENAI_EMBEDDING_WITH_CODE = "openai_embedding_with_code"
     EMBEDDING_RERANKING_WITH_CODE = "embedding_reranking_with_code"
 
 class ResultAnalyzer:
@@ -21,9 +22,10 @@ class ResultAnalyzer:
         # Map each method to its directory
         self.method_dirs = {
             RetrievalMethod.EMBEDDING: self.base_dir / RetrievalMethod.EMBEDDING.value,
-            RetrievalMethod.EMBEDDING_RERANKING: self.base_dir / RetrievalMethod.EMBEDDING_RERANKING.value,
+            # RetrievalMethod.EMBEDDING_RERANKING: self.base_dir / RetrievalMethod.EMBEDDING_RERANKING.value,
             RetrievalMethod.EMBEDDING_WITH_CODE: self.base_dir / RetrievalMethod.EMBEDDING_WITH_CODE.value,
-            RetrievalMethod.EMBEDDING_RERANKING_WITH_CODE: self.base_dir / RetrievalMethod.EMBEDDING_RERANKING_WITH_CODE.value,
+            RetrievalMethod.OPENAI_EMBEDDING_WITH_CODE: self.base_dir / RetrievalMethod.OPENAI_EMBEDDING_WITH_CODE.value,
+            # RetrievalMethod.EMBEDDING_RERANKING_WITH_CODE: self.base_dir / RetrievalMethod.EMBEDDING_RERANKING_WITH_CODE.value,
         }
 
     def load_results(self, file_path: Path) -> List[EvalSummary]:
@@ -36,17 +38,26 @@ class ResultAnalyzer:
         """Convert results to pandas DataFrame with flattened metrics"""
         rows = []
         for result in results:
-            row = {
+            # Basic metrics
+            base_row = {
                 "evaluator_model": result.evaluator_model,
                 "question": result.case.question,
                 "difficulty": result.case.difficulty,
-                "chunk_relevance": result.eval_response.chunk_relevance,
-                "answer_correctness": result.eval_response.answer_correctness,
-                "code_reference": result.eval_response.code_reference,
-                "weighted_total": result.eval_response.weighted_total,
-                "environment": getattr(result.case, 'environment', 'default')  # Added environment
+                "environment": getattr(result.case, 'environment', 'default')
             }
-            rows.append(row)
+            
+            # Add metrics for each round
+            for round in result.eval_rounds:
+                row = base_row.copy()
+                row.update({
+                    "round_id": round.round_id,
+                    "chunk_relevance": round.eval_response.chunk_relevance,
+                    "answer_correctness": round.eval_response.answer_correctness,
+                    "code_reference": round.eval_response.code_reference,
+                    "weighted_total": round.eval_response.weighted_total,
+                    "timestamp": round.timestamp
+                })
+                rows.append(row)
         
         return pd.DataFrame(rows)
 
@@ -71,8 +82,17 @@ class ResultAnalyzer:
         return f"{improvement:+.1f}%" if improvement else "0%"
 
     def get_stats_by_group(self, df: pd.DataFrame, group_by: str) -> pd.DataFrame:
-        """Calculate statistics grouped by specified column"""
-        return df.groupby(group_by).agg({
+        """Calculate statistics with round variance"""
+        # First get mean per question/round
+        question_means = df.groupby([group_by, "question"]).agg({
+            "chunk_relevance": "mean",
+            "answer_correctness": "mean",
+            "code_reference": "mean",
+            "weighted_total": "mean"
+        })
+        
+        # Then get mean and std across questions
+        return question_means.groupby(level=0).agg({
             "chunk_relevance": ["mean", "std"],
             "answer_correctness": ["mean", "std"],
             "code_reference": ["mean", "std"],
