@@ -25,6 +25,7 @@ class ResultAnalyzer:
             # RetrievalMethod.EMBEDDING_RERANKING: self.base_dir / RetrievalMethod.EMBEDDING_RERANKING.value,
             RetrievalMethod.EMBEDDING_WITH_CODE: self.base_dir / RetrievalMethod.EMBEDDING_WITH_CODE.value,
             RetrievalMethod.OPENAI_EMBEDDING_WITH_CODE: self.base_dir / RetrievalMethod.OPENAI_EMBEDDING_WITH_CODE.value,
+            RetrievalMethod.VOYAGE_EMBEDDING_WITH_CODE: self.base_dir / RetrievalMethod.VOYAGE_EMBEDDING_WITH_CODE.value,
             # RetrievalMethod.EMBEDDING_RERANKING_WITH_CODE: self.base_dir / RetrievalMethod.EMBEDDING_RERANKING_WITH_CODE.value,
         }
 
