@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 import gradio as gr
+from know_lang_bot.configs.chat_config import ChatConfig
 from know_lang_bot.configs.config import AppConfig
 from know_lang_bot.utils.fancy_log import FancyLogger
 from know_lang_bot.utils.rate_limiter import RateLimiter
@@ -19,32 +20,12 @@ class CodeContext:
     start_line: int
     end_line: int
 
-    def to_title(self) -> str:
+    def to_title(self, config: ChatConfig) -> str:
         """Format code context as a title string"""
-        title = f"📄 {self.file_path} (lines {self.start_line}-{self.end_line})"
+        truncated_file_path = self.file_path[len(config.code_path_prefix):]
+        title = f"📄 {truncated_file_path} (lines {self.start_line}-{self.end_line})"
         return title
     
-    @classmethod
-    def from_title(cls, title: str) -> "CodeContext":
-        """Parse code context from a title string"""
-        try:
-            # Split on first emoji and space
-            parts = title.split("📄 ")[1].split(" ")
-            file_path = parts[0]
-            # Extract line numbers from parentheses
-            line_nums = parts[1].strip("()").split(" ")[1].split("-")
-            start_line = int(line_nums[0])
-            end_line = int(line_nums[1])
-            
-            return cls(
-                file_path=file_path,
-                start_line=start_line,
-                end_line=end_line,
-            )
-        except Exception as e:
-            LOG.error(f"Error parsing code context from title: {e}")
-            return None
-
     @classmethod
     def from_metadata(cls, metadata: Dict) -> "CodeContext":
         """Create code context from metadata dictionary"""
@@ -94,7 +75,7 @@ class CodeQAChatInterface:
         if not code:
             return None
 
-        return f"<details><summary>{context.to_title()}</summary>\n\n```python\n{code}\n```\n\n</details>"
+        return f"<details><summary>{context.to_title(self.config.chat)}</summary>\n\n```python\n{code}\n```\n\n</details>"
     
     def _handle_feedback(self, like_data: gr.LikeData, history: List[ChatMessage], request: gr.Request):
          # Get the query and response pair

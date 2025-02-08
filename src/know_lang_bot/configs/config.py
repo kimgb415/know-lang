@@ -4,7 +4,7 @@ from pydantic import Field, field_validator, ValidationInfo
 from pathlib import Path
 import fnmatch
 from know_lang_bot.core.types import ModelProvider
-from know_lang_bot.configs.chat_config import ChatbotAnalyticsConfig
+from know_lang_bot.configs.chat_config import ChatConfig, ChatbotAnalyticsConfig
 import os
 
 def _validate_api_key(v: Optional[str], info: ValidationInfo) -> Optional[str]:
@@ -175,27 +175,6 @@ class RerankerConfig(BaseSettings):
     def validate_api_key(cls, v: Optional[str], info: ValidationInfo) -> Optional[str]:
         return _validate_api_key(v, info)
 
-class ChatConfig(BaseSettings):
-    max_context_chunks: int = Field(
-        default=5,
-        description="Maximum number of similar chunks to include in context"
-    )
-    similarity_threshold: float = Field(
-        default=0.7,
-        description="Minimum similarity score to include a chunk"
-    )
-    interface_title: str = Field(
-        default="Code Repository Q&A Assistant",
-        description="Title shown in the chat interface"
-    )
-    interface_description: str = Field(
-        default="Ask questions about the codebase and I'll help you understand it!",
-        description="Description shown in the chat interface"
-    )
-    max_length_per_chunk: int = Field(
-        default=8000,
-        description="Maximum number of characters per chunk"
-    )
 
 class EvaluatorConfig(LLMConfig):
     evaluation_rounds: int = Field(
