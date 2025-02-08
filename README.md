@@ -53,24 +53,6 @@ flowchart LR
     E --> F[User Interface]
 ```
 
-## Quick Start
-
-```bash
-pip install knowlang
-```
-
-Basic usage:
-
-```python
-from knowlang import CodebaseRAG
-
-# Initialize with a repository
-rag = CodebaseRAG("huggingface/transformers")
-
-# Start the chat interface
-rag.launch_chat()
-```
-
 ## Architecture
 
 KnowLang uses several key technologies:
