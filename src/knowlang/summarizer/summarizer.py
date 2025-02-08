@@ -7,7 +7,8 @@ from pprint import pformat
 from rich.progress import Progress
 
 from knowlang.configs.config import AppConfig
-from knowlang.core.types import CodeChunk, ModelProvider
+from knowlang.core.types import CodeChunk
+from knowlang.utils.chunking_util import format_code_summary
 from knowlang.utils.fancy_log import FancyLogger
 from knowlang.utils.model_provider import create_pydantic_model
 from knowlang.models.embeddings import generate_embedding
@@ -91,19 +92,11 @@ Provide a clean, concise and focused summary. Don't include unnecessary nor gene
         result = await self.agent.run(prompt)
         LOG.debug(f"Summary for chunk {chunk.file_path}:{chunk.start_line}-{chunk.end_line}:\n{pformat(result.data)}")
 
-        return result.data
-
+        return format_code_summary(chunk.content, result.data)
+    
     async def process_and_store_chunk(self, chunk: CodeChunk):
         """Process a chunk and store it in ChromaDB"""
         summary = await self.summarize_chunk(chunk)
-
-        summary = f"""
-CODE:
-{chunk.content}
-
-SUMMARY:
-{summary}
-"""
         
         # Create a unique ID for the chunk
         chunk_id = f"{chunk.file_path}:{chunk.start_line}-{chunk.end_line}"

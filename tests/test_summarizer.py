@@ -5,6 +5,7 @@ from pathlib import Path
 from knowlang.summarizer.summarizer import CodeSummarizer
 from knowlang.core.types import CodeChunk, ChunkType
 from knowlang.configs.config import AppConfig
+from knowlang.utils.chunking_util import format_code_summary
 
 @pytest.fixture
 def config():
@@ -64,7 +65,7 @@ async def test_summarize_chunk(mock_agent_class, config: AppConfig, sample_chunk
     
     # Verify result
     assert isinstance(result, str)
-    assert result == mock_run_result.data
+    assert result == format_code_summary(sample_chunks[0].content, mock_run_result.data)
     
     # Verify agent was called with correct prompt
     call_args = mock_agent.run.call_args[0][0]
@@ -110,10 +111,12 @@ async def test_process_and_store_chunk_with_embedding(
     
     # Process the chunk
     await summarizer.process_and_store_chunk(sample_chunks[0])
+
+    code_summary = format_code_summary(sample_chunks[0].content, mock_run_result.data)
     
     # Verify ollama.embed was called with correct parameters
     mock_embedding_generator.assert_called_once_with(
-        mock_run_result.data,
+        code_summary,
         config.embedding,
     )
     
@@ -124,7 +127,7 @@ async def test_process_and_store_chunk_with_embedding(
     kwargs = add_call[1]
     assert len(kwargs['embeddings']) == 3
     assert kwargs['embeddings'] == mock_embedding
-    assert kwargs['documents'][0] == mock_run_result.data
+    assert kwargs['documents'][0] == code_summary
     assert kwargs['ids'][0] == f"{sample_chunks[0].file_path}:{sample_chunks[0].start_line}-{sample_chunks[0].end_line}"
     
     # Verify metadata

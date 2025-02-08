@@ -2,6 +2,10 @@
 MAX_CHARS_PER_CHUNK = 10000  # Approximate 8k tokens limit (very rough estimate)
 
 
+def format_code_summary(code: str, summary: str) -> str:
+    """Format code and summary into a single string"""
+    return f"CODE:\n{code}\n\nSUMMARY:\n{summary}"
+
 def truncate_chunk(text: str, max_chars: int = MAX_CHARS_PER_CHUNK) -> str:
     """Truncate text to approximate token limit while preserving structure"""
     if len(text) <= max_chars:
