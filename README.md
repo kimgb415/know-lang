@@ -1,3 +1,12 @@
+---
+title: KnowLangBot
+emoji: 🤖
+colorFrom: blue
+colorTo: purple
+sdk: docker
+app_port: 7860
+---
+
 # KnowLang: Comprehensive Understanding for Complex Codebase
 
 KnowLang is an advanced codebase exploration tool that helps software engineers better understand complex codebases through semantic search and intelligent Q&A capabilities. Our first release focuses on providing RAG-powered search and Q&A for popular open-source libraries, with Hugging Face's repositories as our initial targets.
