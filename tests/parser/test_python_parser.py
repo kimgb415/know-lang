@@ -1,6 +1,6 @@
 import pytest
 from pathlib import Path
-from know_lang_bot.core.types import ChunkType
+from knowlang.core.types import ChunkType
 from tests.test_data.python_files import (
     TEST_FILES,
     INVALID_SYNTAX, 
@@ -8,8 +8,8 @@ from tests.test_data.python_files import (
     NESTED_CLASS_EXPECTATIONS,
     COMPLEX_FILE_EXPECTATIONS
 )
-from know_lang_bot.core.types import CodeChunk
-from know_lang_bot.parser.languages.python.parser import PythonParser
+from knowlang.core.types import CodeChunk
+from knowlang.parser.languages.python.parser import PythonParser
 from typing import List
 import tempfile
 

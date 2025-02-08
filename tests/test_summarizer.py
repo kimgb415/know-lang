@@ -2,9 +2,9 @@ import pytest
 import tempfile
 from unittest.mock import Mock, patch, AsyncMock
 from pathlib import Path
-from know_lang_bot.summarizer.summarizer import CodeSummarizer
-from know_lang_bot.core.types import CodeChunk, ChunkType
-from know_lang_bot.configs.config import AppConfig
+from knowlang.summarizer.summarizer import CodeSummarizer
+from knowlang.core.types import CodeChunk, ChunkType
+from knowlang.configs.config import AppConfig
 
 @pytest.fixture
 def config():
@@ -52,7 +52,7 @@ def mock_run_result(mock_summary):
     return mock_result
 
 @pytest.mark.asyncio
-@patch('know_lang_bot.summarizer.summarizer.Agent')
+@patch('knowlang.summarizer.summarizer.Agent')
 async def test_summarize_chunk(mock_agent_class, config: AppConfig, sample_chunks: list[CodeChunk], mock_run_result: Mock):
     """Test summarizing a single chunk"""
     # Setup the mock agent instance
@@ -71,7 +71,7 @@ async def test_summarize_chunk(mock_agent_class, config: AppConfig, sample_chunk
     assert "def hello()" in call_args
     assert "Says hello" in call_args
 
-@patch('know_lang_bot.summarizer.summarizer.Agent')
+@patch('knowlang.summarizer.summarizer.Agent')
 def test_chromadb_initialization(mock_agent_class, config: AppConfig):
     """Test ChromaDB initialization"""
     mock_agent = mock_agent_class.return_value
@@ -85,8 +85,8 @@ def test_chromadb_initialization(mock_agent_class, config: AppConfig):
     assert new_summarizer.collection is not None
 
 @pytest.mark.asyncio
-@patch('know_lang_bot.summarizer.summarizer.generate_embedding')
-@patch('know_lang_bot.summarizer.summarizer.Agent')
+@patch('knowlang.summarizer.summarizer.generate_embedding')
+@patch('knowlang.summarizer.summarizer.Agent')
 async def test_process_and_store_chunk_with_embedding(
     mock_agent_class, 
     mock_embedding_generator, 

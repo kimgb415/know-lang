@@ -5,7 +5,7 @@
       "name": "Know Lang",
       "type": "debugpy",
       "request": "launch",
-      "module": "know_lang_bot",
+      "module": "knowlang",
       "args": [
         "--v"
       ]
@@ -14,7 +14,7 @@
       "name": "Know Lang ChatBot ",
       "type": "debugpy",
       "request": "launch",
-      "program": "${workspaceFolder}/src/know_lang_bot/chat_bot/gradio_demo.py",
+      "program": "${workspaceFolder}/src/knowlang/chat_bot/gradio_demo.py",
     }
   ]
 }

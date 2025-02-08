@@ -3,7 +3,7 @@ addopts = [
     "--import-mode=importlib",
 ]
 [project]
-name = "know_lang_bot"
+name = "knowlang"
 version = "0.1.0"
 description = ""
 authors = [
@@ -26,7 +26,7 @@ dependencies = [
 
 [tool.poetry]
 packages = [
-    { include = "know_lang_bot", from="src" },
+    { include = "knowlang", from="src" },
 ]
 
 
