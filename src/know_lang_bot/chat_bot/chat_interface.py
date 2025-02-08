@@ -151,11 +151,26 @@ class CodeQAChatInterface:
                 height=600
             )
             
+            # Add example questions
+            example_questions = [
+                "How does Trainer handle distributed training and gradient accumulation? Explain the implementation details.",
+                "How does the text generation pipeline handle chat-based generation and template processing?",
+                "How does the transformers library automatically select and configure the appropriate quantization method?",
+                "How to implement top-k filtering for text generation?"
+            ]
+            
             msg = gr.Textbox(
                 label="Ask about the codebase",
-                placeholder="What does the CodeParser class do?",
+                placeholder="what are the key components required to implement a new quantization method?",
                 container=False,
                 scale=7
+            )
+
+            gr.Examples(
+                examples=example_questions,
+                inputs=msg,
+                label="Example Questions",
+                examples_per_page=6
             )
             
             with gr.Row():
@@ -165,7 +180,7 @@ class CodeQAChatInterface:
             async def respond(message: str, history: List[ChatMessage], request: gr.Request) -> AsyncGenerator[List[ChatMessage], None]:
                 async for updated_history in self.stream_response(message, history, request):
                     yield updated_history
-                    
+                        
             # Set up event handlers
             msg.submit(respond, [msg, chatbot], [chatbot])
             submit.click(respond, [msg, chatbot], [chatbot])
