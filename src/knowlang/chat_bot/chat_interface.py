@@ -186,6 +186,7 @@ class CodeQAChatInterface:
             
             # Add example questions
             example_questions = [
+                "what are the key components required to implement a new quantization method?",
                 "How does Trainer handle distributed training and gradient accumulation? Explain the implementation details.",
                 "How does the text generation pipeline handle chat-based generation and template processing?",
                 "How does the transformers library automatically select and configure the appropriate quantization method?",
