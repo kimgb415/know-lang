@@ -53,6 +53,73 @@ flowchart LR
     E --> F[User Interface]
 ```
 
+
+## Quick Start
+
+### Installation
+
+```bash
+pip install knowlang
+```
+
+### Basic Usage
+
+1. First, parse and index your codebase:
+```bash
+# For a local codebase
+knowlang parse ./my-project
+
+# For verbose output
+knowlang -v parse ./my-project
+```
+
+2. Then, launch the chat interface:
+```bash
+knowlang chat
+```
+
+That's it! The chat interface will open in your browser, ready to answer questions about your codebase.
+
+### Advanced Usage
+
+#### Custom Configuration
+```bash
+# Use custom configuration file
+knowlang parse --config my_config.yaml ./my-project
+
+# Output parsing results in JSON format
+knowlang parse --output json ./my-project
+```
+
+#### Chat Interface Options
+```bash
+# Run on a specific port
+knowlang chat --port 7860
+
+# Create a shareable link
+knowlang chat --share
+
+# Run on custom server
+knowlang chat --server-name localhost --server-port 8000
+```
+
+### Example Session
+
+```bash
+# Parse the transformers library
+$ knowlang parse ./transformers
+Found 1247 code chunks
+Processing summaries... Done!
+
+# Start chatting
+$ knowlang chat
+
+💡 Ask questions like:
+- How is tokenization implemented?
+- Explain the training pipeline
+- Show me examples of custom model usage
+```
+
 ## Architecture
 
 KnowLang uses several key technologies:
