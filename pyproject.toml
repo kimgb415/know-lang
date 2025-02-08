@@ -29,6 +29,8 @@ packages = [
     { include = "knowlang", from="src" },
 ]
 
+[tool.poetry.scripts]
+knowlang = "knowlang.cli:cli_main"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.3.4"
