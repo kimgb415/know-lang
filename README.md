@@ -54,7 +54,46 @@ flowchart LR
 ```
 
 
+## Prerequisites
+
+KnowLang uses [Ollama](https://ollama.com) as its default LLM and embedding provider. Before installing KnowLang:
+
+1. Install Ollama:
+```bash
+# check the official download instructions from https://ollama.com/download
+curl -fsSL https://ollama.com/install.sh | sh
+```
+
+2. Pull required models:
+```bash
+# For LLM responses
+ollama pull llama3.2
+
+# For code embeddings
+ollama pull mxbai-embed-large
+```
+
+3. Verify Ollama is running:
+```bash
+ollama list
+```
+
+You should see both `llama3.2` and `mxbai-embed-large` in the list of available models.
+
+Note: While Ollama is the default choice for easy setup, KnowLang supports other LLM providers through configuration.
+
 ## Quick Start
+
+### System Requirements
+
+- **RAM**: Minimum 16GB recommended (Ollama models require significant memory)
+- **Storage**: At least 10GB free space for model files
+- **OS**: 
+  - Linux (recommended)
+  - macOS 12+ (Intel or Apple Silicon)
+  - Windows 10+ with WSL2
+- **Python**: 3.10 or higher
+
 
 ### Installation
 
