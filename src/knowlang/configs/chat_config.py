@@ -1,3 +1,4 @@
+from typing import Optional
 from pydantic import Field
 from pydantic_settings import BaseSettings
 from enum import Enum
@@ -42,7 +43,7 @@ class ChatbotAnalyticsConfig(BaseSettings):
         description="Analytics provider to use for tracking feedback"
     )
 
-    api_key: str = Field(
+    api_key: Optional[str] = Field(
         default=None,
         description="api key for feedback tracking"
     )

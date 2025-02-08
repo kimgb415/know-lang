@@ -132,11 +132,11 @@ class LLMConfig(BaseSettings):
 
 class DBConfig(BaseSettings):
     persist_directory: Path = Field(
-        default=Path("./chroma_db"),
+        default=Path("./chromadb"),
         description="Directory to store ChromaDB files"
     )
     collection_name: str = Field(
-        default="code_chunks",
+        default="code",
         description="Name of the ChromaDB collection"
     )
     codebase_directory: Path = Field(
