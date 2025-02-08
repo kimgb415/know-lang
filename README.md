@@ -80,7 +80,7 @@ ollama list
 
 You should see both `llama3.2` and `mxbai-embed-large` in the list of available models.
 
-Note: While Ollama is the default choice for easy setup, KnowLang supports other LLM providers through configuration.
+Note: While Ollama is the default choice for easy setup, KnowLang supports other LLM providers through configuration. See our [Configuration Guide](configuration.md) for using alternative providers like OpenAI or Anthropic.
 
 ## Quick Start
 
