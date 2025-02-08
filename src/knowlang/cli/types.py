@@ -15,3 +15,12 @@ class ParseCommandArgs(BaseCommandArgs):
     path: Path
     output: Literal["table", "json"]
     command: Literal["parse"]  # for command identification
+
+@dataclass
+class ChatCommandArgs(BaseCommandArgs):
+    """Arguments for the chat command."""
+    command: Literal["chat"]
+    port: Optional[int] = None
+    share: bool = False
+    server_port: Optional[int] = None
+    server_name: Optional[str] = None

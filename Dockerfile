@@ -15,4 +15,4 @@ RUN pip install --no-cache-dir .
 EXPOSE 7860
 
 # Step 6: Command to run your Gradio app (or any Python script)
-CMD ["python", "app.py"]
+CMD ["python", "hf_transformers_demo.py"]

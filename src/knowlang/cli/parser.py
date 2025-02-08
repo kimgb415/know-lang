@@ -3,7 +3,8 @@ import argparse
 from pathlib import Path
 from typing import Union
 
-from knowlang.cli.types import ParseCommandArgs, BaseCommandArgs
+from knowlang.cli.commands.chat import chat_command
+from knowlang.cli.types import ChatCommandArgs, ParseCommandArgs, BaseCommandArgs
 from knowlang.cli.commands.parse import parse_command
 
 def _convert_to_args(parsed_args: argparse.Namespace) -> Union[ParseCommandArgs, BaseCommandArgs]:
@@ -19,6 +20,15 @@ def _convert_to_args(parsed_args: argparse.Namespace) -> Union[ParseCommandArgs,
             path=parsed_args.path,
             output=parsed_args.output,
             command="parse"
+        )
+    elif parsed_args.command == "chat":
+        return ChatCommandArgs(
+            **base_args,
+            command="chat",
+            port=parsed_args.port,
+            share=parsed_args.share,
+            server_port=parsed_args.server_port,
+            server_name=parsed_args.server_name
         )
     
     return BaseCommandArgs(**base_args)
@@ -70,6 +80,33 @@ def create_parser() -> argparse.ArgumentParser:
         help="Path to codebase directory or repository URL"
     )
     parse_parser.set_defaults(func=parse_command)
+
+    # Chat command
+    chat_parser = subparsers.add_parser(
+        "chat",
+        help="Launch the chat interface"
+    )
+    chat_parser.add_argument(
+        "--port",
+        type=int,
+        help="Port to run the interface on"
+    )
+    chat_parser.add_argument(
+        "--share",
+        action="store_true",
+        help="Create a shareable link"
+    )
+    chat_parser.add_argument(
+        "--server-port",
+        type=int,
+        help="Port to run the server on (if different from --port)"
+    )
+    chat_parser.add_argument(
+        "--server-name",
+        type=str,
+        help="Server name to listen on (default: 0.0.0.0)"
+    )
+    chat_parser.set_defaults(func=chat_command)
     
     return parser
 
