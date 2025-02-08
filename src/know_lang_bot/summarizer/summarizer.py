@@ -96,6 +96,14 @@ Provide a clean, concise and focused summary. Don't include unnecessary nor gene
     async def process_and_store_chunk(self, chunk: CodeChunk):
         """Process a chunk and store it in ChromaDB"""
         summary = await self.summarize_chunk(chunk)
+
+        summary = f"""
+CODE:
+{chunk.content}
+
+SUMMARY:
+{summary}
+"""
         
         # Create a unique ID for the chunk
         chunk_id = f"{chunk.file_path}:{chunk.start_line}-{chunk.end_line}"
