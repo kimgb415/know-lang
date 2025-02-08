@@ -4,7 +4,7 @@ from unittest.mock import Mock, patch, AsyncMock
 from pathlib import Path
 from know_lang_bot.summarizer.summarizer import CodeSummarizer
 from know_lang_bot.core.types import CodeChunk, ChunkType
-from know_lang_bot.config import AppConfig
+from know_lang_bot.configs.config import AppConfig
 
 @pytest.fixture
 def config():

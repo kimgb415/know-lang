@@ -5,7 +5,7 @@ from chromadb.errors import InvalidCollectionException
 from rich.progress import Progress
 from rich.console import Console
 from typing import List
-from know_lang_bot.config import AppConfig, EmbeddingConfig
+from know_lang_bot.configs.config import AppConfig, EmbeddingConfig
 from know_lang_bot.models.embeddings import generate_embedding, EmbeddingInputType
 from know_lang_bot.utils.fancy_log import FancyLogger
 

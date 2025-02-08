@@ -1,8 +1,10 @@
+from dataclasses import dataclass
 import gradio as gr
-from know_lang_bot.config import AppConfig
+from know_lang_bot.configs.config import AppConfig
 from know_lang_bot.utils.fancy_log import FancyLogger
 from know_lang_bot.utils.rate_limiter import RateLimiter
 from know_lang_bot.chat_bot.chat_graph import stream_chat_progress, ChatStatus
+from know_lang_bot.chat_bot.feedback import ChatAnalytics
 import chromadb
 from typing import List, Dict, AsyncGenerator
 from pathlib import Path
@@ -11,12 +13,54 @@ from gradio import ChatMessage
 
 LOG = FancyLogger(__name__)
 
+@dataclass
+class CodeContext:
+    file_path: str
+    start_line: int
+    end_line: int
+
+    def to_title(self) -> str:
+        """Format code context as a title string"""
+        title = f"📄 {self.file_path} (lines {self.start_line}-{self.end_line})"
+        return title
+    
+    @classmethod
+    def from_title(cls, title: str) -> "CodeContext":
+        """Parse code context from a title string"""
+        try:
+            # Split on first emoji and space
+            parts = title.split("📄 ")[1].split(" ")
+            file_path = parts[0]
+            # Extract line numbers from parentheses
+            line_nums = parts[1].strip("()").split(" ")[1].split("-")
+            start_line = int(line_nums[0])
+            end_line = int(line_nums[1])
+            
+            return cls(
+                file_path=file_path,
+                start_line=start_line,
+                end_line=end_line,
+            )
+        except Exception as e:
+            LOG.error(f"Error parsing code context from title: {e}")
+            return None
+
+    @classmethod
+    def from_metadata(cls, metadata: Dict) -> "CodeContext":
+        """Create code context from metadata dictionary"""
+        return cls(
+            file_path=metadata['file_path'],
+            start_line=metadata['start_line'],
+            end_line=metadata['end_line'],
+        )
+
 class CodeQAChatInterface:
     def __init__(self, config: AppConfig):
         self.config = config
         self._init_chroma()
         self.codebase_dir = Path(config.db.codebase_directory)
         self.rate_limiter = RateLimiter()
+        self.chat_analytics = ChatAnalytics(config.chat_analytics)
         
     def _init_chroma(self):
         """Initialize ChromaDB connection"""
@@ -41,20 +85,28 @@ class CodeQAChatInterface:
 
     def _format_code_block(self, metadata: Dict) -> str:
         """Format a single code block with metadata"""
-        file_path = metadata['file_path']
-        start_line = metadata['start_line']
-        end_line = metadata['end_line']
-        
-        code = self._get_code_block(file_path, start_line, end_line)
+        context = CodeContext.from_metadata(metadata)
+        code = self._get_code_block(
+            context.file_path, 
+            context.start_line, 
+            context.end_line
+        )
         if not code:
             return None
-            
-        title = f"📄 {file_path} (lines {start_line}-{end_line})"
-        if metadata.get('name'):
-            title += f" - {metadata['type']}: {metadata['name']}"
-            
 
-        return f"<details><summary>{title}</summary>\n\n```python\n{code}\n```\n\n</details>"
+        return f"<details><summary>{context.to_title()}</summary>\n\n```python\n{code}\n```\n\n</details>"
+    
+    def _handle_feedback(self, like_data: gr.LikeData, history: List[ChatMessage], request: gr.Request):
+         # Get the query and response pair
+        query = history[like_data.index - 1]["content"]  # User question
+        
+        # Track feedback
+        self.chat_analytics.track_feedback(
+            like=like_data.value,  # True for thumbs up, False for thumbs down
+            query=query,
+            client_ip=request.request.client.host
+        )
+
 
     async def stream_response(
         self,
@@ -178,12 +230,14 @@ class CodeQAChatInterface:
                 clear = gr.ClearButton([msg, chatbot], scale=1)
 
             async def respond(message: str, history: List[ChatMessage], request: gr.Request) -> AsyncGenerator[List[ChatMessage], None]:
+                self.chat_analytics.track_query(message, request.request.client.host)
                 async for updated_history in self.stream_response(message, history, request):
                     yield updated_history
                         
             # Set up event handlers
             msg.submit(respond, [msg, chatbot], [chatbot])
             submit.click(respond, [msg, chatbot], [chatbot])
+            chatbot.like(self._handle_feedback, [chatbot])
 
         return interface
 

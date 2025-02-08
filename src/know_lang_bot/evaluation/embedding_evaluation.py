@@ -7,7 +7,7 @@ import numpy as np
 from pydantic import BaseModel
 from dataclasses import dataclass
 from know_lang_bot.chat_bot.chat_graph import ChatResult
-from know_lang_bot.config import AppConfig, EmbeddingConfig
+from know_lang_bot.configs.config import AppConfig, EmbeddingConfig
 import json
 from know_lang_bot.evaluation.chatbot_evaluation import EvalCase, TRANSFORMER_TEST_CASES
 from know_lang_bot.models.embeddings import EmbeddingInputType, generate_embedding, EmbeddingVector

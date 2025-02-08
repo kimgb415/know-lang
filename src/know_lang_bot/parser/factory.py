@@ -3,7 +3,7 @@ from pathlib import Path
 
 from know_lang_bot.parser.base.parser import LanguageParser
 from know_lang_bot.parser.languages.python.parser import PythonParser
-from know_lang_bot.config import AppConfig
+from know_lang_bot.configs.config import AppConfig
 
 class CodeParserFactory():
     """Concrete implementation of parser factory"""

@@ -6,7 +6,7 @@ from pydantic import BaseModel, Field
 from pprint import pformat
 from rich.progress import Progress
 
-from know_lang_bot.config import AppConfig
+from know_lang_bot.configs.config import AppConfig
 from know_lang_bot.core.types import CodeChunk, ModelProvider
 from know_lang_bot.utils.fancy_log import FancyLogger
 from know_lang_bot.utils.model_provider import create_pydantic_model

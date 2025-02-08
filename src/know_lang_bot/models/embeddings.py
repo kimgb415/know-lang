@@ -2,7 +2,7 @@ import ollama
 import openai
 import voyageai
 import voyageai.client
-from know_lang_bot.config import EmbeddingConfig, ModelProvider
+from know_lang_bot.configs.config import EmbeddingConfig, ModelProvider
 from typing import Union, List, overload, Optional
 from enum import Enum
 

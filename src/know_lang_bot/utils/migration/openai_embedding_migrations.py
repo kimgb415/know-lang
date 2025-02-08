@@ -8,7 +8,7 @@ from rich.console import Console
 from typing import List, Dict, Optional
 from openai import OpenAI
 from datetime import datetime
-from know_lang_bot.config import AppConfig
+from know_lang_bot.configs.config import AppConfig
 from know_lang_bot.utils.fancy_log import FancyLogger
 from know_lang_bot.utils.chunking_util import truncate_chunk
 

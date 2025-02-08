@@ -2,7 +2,7 @@ from typing import List
 from enum import Enum
 from pydantic import BaseModel, Field, computed_field
 from pydantic_ai import Agent
-from know_lang_bot.config import AppConfig
+from know_lang_bot.configs.config import AppConfig
 from know_lang_bot.utils.chunking_util import truncate_chunk
 from know_lang_bot.utils.model_provider import create_pydantic_model
 from know_lang_bot.chat_bot.chat_graph import ChatResult, process_chat

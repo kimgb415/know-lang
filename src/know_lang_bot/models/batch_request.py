@@ -1,5 +1,5 @@
 from typing import List
-from know_lang_bot.config import ModelProvider, LLMConfig
+from know_lang_bot.configs.config import ModelProvider, LLMConfig
 from pydantic_ai.messages import ModelMessage
 
 def _process_anthropic_batch(batched_input: List[List[ModelMessage]], config: LLMConfig) -> List[str]:

@@ -7,7 +7,7 @@ from rich.console import Console
 from rich.table import Table
 
 from know_lang_bot.core.types import CodeChunk
-from know_lang_bot.config import AppConfig
+from know_lang_bot.configs.config import AppConfig
 from know_lang_bot.parser.factory import CodeParserFactory
 from know_lang_bot.parser.providers.git import GitProvider
 from know_lang_bot.parser.providers.filesystem import FilesystemProvider

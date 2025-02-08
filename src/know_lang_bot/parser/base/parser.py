@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from typing import List
 from pathlib import Path
 from know_lang_bot.core.types import CodeChunk
-from know_lang_bot.config import AppConfig, LanguageConfig
+from know_lang_bot.configs.config import AppConfig, LanguageConfig
 from tree_sitter import Language, Parser
 
 class LanguageParser(ABC):

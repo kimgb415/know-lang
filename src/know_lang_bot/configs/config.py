@@ -4,6 +4,7 @@ from pydantic import Field, field_validator, ValidationInfo
 from pathlib import Path
 import fnmatch
 from know_lang_bot.core.types import ModelProvider
+from know_lang_bot.configs.chat_config import ChatbotAnalyticsConfig
 import os
 
 def _validate_api_key(v: Optional[str], info: ValidationInfo) -> Optional[str]:
@@ -216,3 +217,4 @@ class AppConfig(BaseSettings):
     parser: ParserConfig = Field(default_factory=ParserConfig)
     chat: ChatConfig = Field(default_factory=ChatConfig)
     embedding: EmbeddingConfig = Field(default_factory=EmbeddingConfig)
+    chat_analytics: ChatbotAnalyticsConfig = Field(default_factory=ChatbotAnalyticsConfig)

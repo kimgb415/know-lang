@@ -2,7 +2,7 @@ import requests
 import zipfile
 import io
 from know_lang_bot.chat_bot.chat_interface import create_chatbot
-from know_lang_bot.config import AppConfig
+from know_lang_bot.configs.config import AppConfig
 import tempfile
 from rich.console import Console
 

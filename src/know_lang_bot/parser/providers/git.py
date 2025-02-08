@@ -1,7 +1,7 @@
 from pathlib import Path
 from typing import Generator
 from git import Repo
-from know_lang_bot.config import AppConfig
+from know_lang_bot.configs.config import AppConfig
 from know_lang_bot.parser.base.provider import CodeProvider
 import os
 

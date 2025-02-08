@@ -5,7 +5,7 @@ from typing import AsyncGenerator, List, Dict, Any, Optional
 import chromadb
 from pydantic import BaseModel
 from pydantic_graph import BaseNode, EndStep, Graph, GraphRunContext, End, HistoryStep
-from know_lang_bot.config import AppConfig, RerankerConfig, EmbeddingConfig
+from know_lang_bot.configs.config import AppConfig, RerankerConfig, EmbeddingConfig
 from know_lang_bot.utils.fancy_log import FancyLogger
 from pydantic_ai import Agent
 import logfire

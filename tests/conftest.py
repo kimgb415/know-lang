@@ -3,7 +3,7 @@ import tempfile
 import git
 from pathlib import Path
 from typing import Dict
-from know_lang_bot.config import AppConfig, ParserConfig, LanguageConfig
+from know_lang_bot.configs.config import AppConfig, ParserConfig, LanguageConfig
 from know_lang_bot.parser.languages.python.parser import PythonParser
 from tests.test_data.python_files import TEST_FILES
 
