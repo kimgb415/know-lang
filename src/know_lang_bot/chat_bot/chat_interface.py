@@ -102,7 +102,7 @@ class CodeQAChatInterface:
         
         # Track feedback
         self.chat_analytics.track_feedback(
-            like=like_data.value,  # True for thumbs up, False for thumbs down
+            like=like_data.liked,  # True for thumbs up, False for thumbs down
             query=query,
             client_ip=request.request.client.host
         )
