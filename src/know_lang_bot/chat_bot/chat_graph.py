@@ -372,7 +372,8 @@ async def process_chat(
     
     try:
         result, _history = await chat_graph.run(
-            PolishQuestionNode(),
+            # Temporary fix to disable PolishQuestionNode
+            RetrieveContextNode(),
             state=state,
             deps=deps
         )
@@ -398,7 +399,8 @@ async def stream_chat_progress(
     state = ChatGraphState(original_question=question)
     deps = ChatGraphDeps(collection=collection, config=config)
     
-    start_node = PolishQuestionNode()
+    # Temporary fix to disable PolishQuestionNode
+    start_node = RetrieveContextNode()
     history: list[HistoryStep[ChatGraphState, ChatResult]] = []
 
     try:
