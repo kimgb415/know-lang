@@ -111,6 +111,8 @@ knowlang parse ./my-project
 # For verbose output
 knowlang -v parse ./my-project
 ```
+> ⚠️ **Warning**  
+> Make sure to setup the correct paths to include and exclude for parsing. Please refer to "Parser Settings" section in [Configuration Guide](configuration.md) for more information
 
 2. Then, launch the chat interface:
 ```bash
