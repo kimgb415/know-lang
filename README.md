@@ -96,10 +96,17 @@ Note: While Ollama is the default choice for easy setup, KnowLang supports other
 
 
 ### Installation
-
+You can install KnowLang via pip:
 ```bash
 pip install knowlang
 ```
+Alternatively, you can clone the repository and install it in editable mode:
+```bash
+git clone https://github.com/kimgb415/know-lang.git
+cd know-lang
+pip install -e .
+```
+This allows you to make changes to the source code and have them immediately reflected without reinstalling the package.
 
 ### Basic Usage
 
