@@ -195,7 +195,7 @@ class CodeQAChatInterface:
             
             msg = gr.Textbox(
                 label="Ask about the codebase",
-                placeholder="what are the key components required to implement a new quantization method?",
+                placeholder=self.config.chat.interface_placeholder,
                 container=False,
                 scale=7
             )
