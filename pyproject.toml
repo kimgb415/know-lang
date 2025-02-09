@@ -4,10 +4,34 @@ addopts = [
 ]
 [project]
 name = "knowlang"
-version = "0.1.0"
-description = ""
+version = "0.2.0"
+description = "AI-powered code understanding assistant that helps developers explore and understand complex codebases through semantic search and intelligent Q&A"
+license = "Apache-2.0"
 authors = [
     {name = "gabhyun kim",email = "kimgb415@gmail.com"}
+]
+keywords = [
+    "code-understanding",
+    "rag",
+    "llm",
+    "code-search",
+    "documentation",
+    "code-analysis",
+    "semantic-search",
+    "developer-tools"
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: Software Development :: Documentation",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "License :: OSI Approved :: Apache Software License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Operating System :: OS Independent",
 ]
 readme = "README.md"
 requires-python = ">=3.10, <3.13"
@@ -23,6 +47,10 @@ dependencies = [
     "voyageai (>=0.3.2,<0.4.0)",
     "mixpanel (>=4.10.1,<5.0.0)"
 ]
+
+[project.urls]
+Homepage = "https://github.com/kimgb415/know-lang"
+Repository = "https://github.com/kimgb415/know-lang"
 
 [tool.poetry]
 packages = [
