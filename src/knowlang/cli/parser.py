@@ -1,37 +1,48 @@
 """Argument parsing for KnowLang CLI."""
 import argparse
 from pathlib import Path
-from typing import Union
+from typing import Optional, Sequence, Union, Dict, Type, Callable
 
 from knowlang.cli.commands.chat import chat_command
-from knowlang.cli.types import ChatCommandArgs, ParseCommandArgs, BaseCommandArgs
 from knowlang.cli.commands.parse import parse_command
+from knowlang.cli.types import ChatCommandArgs, ParseCommandArgs, BaseCommandArgs
 
-def _convert_to_args(parsed_args: argparse.Namespace) -> Union[ParseCommandArgs, BaseCommandArgs]:
+# Define command configurations
+COMMAND_CONFIGS: Dict[str, tuple[Type[BaseCommandArgs], Callable]] = {
+    "parse": (ParseCommandArgs, parse_command),
+    "chat": (ChatCommandArgs, chat_command),
+}
+
+def _convert_to_args(parsed_namespace: argparse.Namespace) -> Union[ParseCommandArgs, ChatCommandArgs]:
     """Convert parsed namespace to typed arguments."""
     base_args = {
-        "verbose": parsed_args.verbose,
-        "config": parsed_args.config if hasattr(parsed_args, "config") else None
+        "verbose": parsed_namespace.verbose,
+        "config": parsed_namespace.config if hasattr(parsed_namespace, "config") else None,
+        "command": parsed_namespace.command
     }
     
-    if parsed_args.command == "parse":
-        return ParseCommandArgs(
-            **base_args,
-            path=parsed_args.path,
-            output=parsed_args.output,
-            command="parse"
-        )
-    elif parsed_args.command == "chat":
-        return ChatCommandArgs(
-            **base_args,
-            command="chat",
-            port=parsed_args.port,
-            share=parsed_args.share,
-            server_port=parsed_args.server_port,
-            server_name=parsed_args.server_name
-        )
+    # Get the appropriate argument class and command function
+    args_class, command_func = COMMAND_CONFIGS[parsed_namespace.command]
     
-    return BaseCommandArgs(**base_args)
+    if parsed_namespace.command == "parse":
+        args = args_class(
+            **base_args,
+            path=Path(parsed_namespace.path).resolve(),
+            output=parsed_namespace.output
+        )
+    elif parsed_namespace.command == "chat":
+        args = args_class(
+            **base_args,
+            port=parsed_namespace.port,
+            share=parsed_namespace.share,
+            server_port=parsed_namespace.server_port,
+            server_name=parsed_namespace.server_name
+        )
+    else:
+        raise ValueError(f"Unknown command: {parsed_namespace.command}")
+        
+    args.command_func = command_func
+    return args
 
 def create_parser() -> argparse.ArgumentParser:
     """Create the main argument parser."""
@@ -79,7 +90,6 @@ def create_parser() -> argparse.ArgumentParser:
         type=Path,
         help="Path to codebase directory or repository URL"
     )
-    parse_parser.set_defaults(func=parse_command)
 
     # Chat command
     chat_parser = subparsers.add_parser(
@@ -106,11 +116,11 @@ def create_parser() -> argparse.ArgumentParser:
         type=str,
         help="Server name to listen on (default: 0.0.0.0)"
     )
-    chat_parser.set_defaults(func=chat_command)
     
     return parser
 
-def parse_args() -> Union[ParseCommandArgs, BaseCommandArgs]:
+def parse_args(args: Optional[Sequence[str]] = None) -> Union[ParseCommandArgs, BaseCommandArgs]:
     """Parse command line arguments into typed objects."""
     parser = create_parser()
-    return _convert_to_args(parser.parse_args())
+    parsed_namespace = parser.parse_args(args)
+    return _convert_to_args(parsed_namespace)
