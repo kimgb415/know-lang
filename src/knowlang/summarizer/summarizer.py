@@ -1,3 +1,4 @@
+from pathlib import Path
 from typing import List
 import chromadb
 from chromadb.errors import InvalidCollectionException
@@ -99,11 +100,12 @@ Provide a clean, concise and focused summary. Don't include unnecessary nor gene
         summary = await self.summarize_chunk(chunk)
         
         # Create a unique ID for the chunk
-        chunk_id = f"{chunk.file_path}:{chunk.start_line}-{chunk.end_line}"
+        relative_path = Path(chunk.file_path).relative_to(self.config.db.codebase_directory).as_posix()
+        chunk_id = f"{relative_path}:{chunk.start_line}-{chunk.end_line}"
         
         # Create metadata using Pydantic model
-        metadata = ChunkMetadata(
-            file_path=chunk.file_path,
+        metadata = ChunkMetadata(   
+            file_path=relative_path,
             start_line=chunk.start_line,
             end_line=chunk.end_line,
             type=chunk.type.value,

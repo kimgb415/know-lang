@@ -29,10 +29,6 @@ class ChatConfig(BaseSettings):
         default=8000,
         description="Maximum number of characters per chunk"
     )
-    code_path_prefix: str = Field(
-        default="",
-        description="Prefix of code paths in the chat interface"
-    )
 
 class AnalyticsProvider(str, Enum):
     MIXPANEL = "mixpanel"

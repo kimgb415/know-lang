@@ -17,7 +17,7 @@ def config():
         )
 
 @pytest.fixture
-def sample_chunks():
+def sample_chunks(config: AppConfig):
     """Create sample code chunks for testing"""
     return [
         CodeChunk(
@@ -25,7 +25,7 @@ def sample_chunks():
             content="def hello(): return 'world'",
             start_line=1,
             end_line=2,
-            file_path="test.py",
+            file_path=str(config.db.codebase_directory / "test.py"),
             name="hello",
             docstring="Says hello"
         ),
@@ -34,7 +34,7 @@ def sample_chunks():
             content="class TestClass:\n    def __init__(self):\n        pass",
             start_line=4,
             end_line=6,
-            file_path="test.py",
+            file_path=str(config.db.codebase_directory / "test.py"),
             name="TestClass",
             docstring="A test class"
         )
@@ -125,14 +125,15 @@ async def test_process_and_store_chunk_with_embedding(
     assert add_call is not None
     
     kwargs = add_call[1]
+    relative_path = Path(sample_chunks[0].file_path).relative_to(config.db.codebase_directory).as_posix()
     assert len(kwargs['embeddings']) == 3
     assert kwargs['embeddings'] == mock_embedding
     assert kwargs['documents'][0] == code_summary
-    assert kwargs['ids'][0] == f"{sample_chunks[0].file_path}:{sample_chunks[0].start_line}-{sample_chunks[0].end_line}"
+    assert kwargs['ids'][0] == f"{relative_path}:{sample_chunks[0].start_line}-{sample_chunks[0].end_line}"
     
     # Verify metadata
     metadata = kwargs['metadatas'][0]
-    assert metadata['file_path'] == sample_chunks[0].file_path
+    assert metadata['file_path'] == relative_path, "File path must be relative"
     assert metadata['start_line'] == sample_chunks[0].start_line
     assert metadata['end_line'] == sample_chunks[0].end_line
     assert metadata['type'] == sample_chunks[0].type.value

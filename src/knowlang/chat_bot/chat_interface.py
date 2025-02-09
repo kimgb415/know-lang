@@ -1,6 +1,5 @@
 from dataclasses import dataclass
 import gradio as gr
-from knowlang.configs.chat_config import ChatConfig
 from knowlang.configs.config import AppConfig
 from knowlang.utils.fancy_log import FancyLogger
 from knowlang.utils.rate_limiter import RateLimiter
@@ -20,11 +19,9 @@ class CodeContext:
     start_line: int
     end_line: int
 
-    def to_title(self, config: ChatConfig) -> str:
+    def to_title(self) -> str:
         """Format code context as a title string"""
-        truncated_file_path = self.file_path[len(config.code_path_prefix):]
-        title = f"📄 {truncated_file_path} (lines {self.start_line}-{self.end_line})"
-        return title
+        return f"📄 {self.file_path} (lines {self.start_line}-{self.end_line})"
     
     @classmethod
     def from_metadata(cls, metadata: Dict) -> "CodeContext":
@@ -39,7 +36,6 @@ class CodeQAChatInterface:
     def __init__(self, config: AppConfig):
         self.config = config
         self._init_chroma()
-        self.codebase_dir = Path(config.db.codebase_directory)
         self.rate_limiter = RateLimiter()
         self.chat_analytics = ChatAnalytics(config.chat_analytics)
         
@@ -51,33 +47,11 @@ class CodeQAChatInterface:
         self.collection = self.db_client.get_collection(
             name=self.config.db.collection_name
         )
-    
-    def _get_code_block(self, file_path: str, start_line: int, end_line: int) -> str:
-        """Read the specified lines from a file and return as a code block"""
-        try:
-            full_path = self.codebase_dir / file_path[len(self.config.chat.code_path_prefix):]
-
-            print(f"Reading code block from {full_path}")
-            with open(full_path, 'r') as f:
-                lines = f.readlines()
-                code_lines = lines[start_line-1:end_line]
-                return ''.join(code_lines)
-        except Exception as e:
-            LOG.error(f"Error reading code block: {e}")
-            return "Error reading code"
-
-    def _format_code_block(self, metadata: Dict) -> str:
+    def _format_code_block(self, code : str,  metadata: Dict) -> str:
         """Format a single code block with metadata"""
         context = CodeContext.from_metadata(metadata)
-        code = self._get_code_block(
-            context.file_path, 
-            context.start_line, 
-            context.end_line
-        )
-        if not code:
-            return None
 
-        return f"<details><summary>{context.to_title(self.config.chat)}</summary>\n\n```python\n{code}\n```\n\n</details>"
+        return f"<details><summary>{context.to_title()}</summary>\n\n```python\n{code}\n```\n\n</details>"
     
     def _handle_feedback(self, like_data: gr.LikeData, history: List[ChatMessage], request: gr.Request):
          # Get the query and response pair
@@ -150,8 +124,8 @@ class CodeQAChatInterface:
             # Add code blocks before final answer if not added yet
             if not code_blocks_added and result.retrieved_context and result.retrieved_context.metadatas:
                 total_code_blocks = []
-                for metadata in result.retrieved_context.metadatas:
-                    code_block = self._format_code_block(metadata)
+                for chunk, metadata in zip(result.retrieved_context.chunks, result.retrieved_context.metadatas):
+                    code_block = self._format_code_block(chunk, metadata)
                     if code_block:
                         total_code_blocks.append(code_block)
 
