@@ -55,7 +55,9 @@ class CodeQAChatInterface:
     def _get_code_block(self, file_path: str, start_line: int, end_line: int) -> str:
         """Read the specified lines from a file and return as a code block"""
         try:
-            full_path = self.codebase_dir / file_path
+            full_path = self.codebase_dir / file_path[len(self.config.chat.code_path_prefix):]
+
+            print(f"Reading code block from {full_path}")
             with open(full_path, 'r') as f:
                 lines = f.readlines()
                 code_lines = lines[start_line-1:end_line]

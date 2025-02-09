@@ -30,7 +30,7 @@ class ChatConfig(BaseSettings):
         description="Maximum number of characters per chunk"
     )
     code_path_prefix: str = Field(
-        default="src/",
+        default="",
         description="Prefix of code paths in the chat interface"
     )
 
