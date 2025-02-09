@@ -121,6 +121,8 @@ knowlang chat
 
 That's it! The chat interface will open in your browser, ready to answer questions about your codebase.
 
+![Chat Interface](chat.png)
+
 ### Advanced Usage
 
 #### Custom Configuration

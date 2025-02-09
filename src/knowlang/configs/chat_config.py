@@ -14,7 +14,7 @@ class ChatConfig(BaseSettings):
         description="Minimum similarity score to include a chunk"
     )
     interface_title: str = Field(
-        default="Code Repository Q&A Assistant",
+        default="KonwLang Codebase Assistant",
         description="Title shown in the chat interface"
     )
     interface_description: str = Field(
