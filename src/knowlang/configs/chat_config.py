@@ -21,6 +21,10 @@ class ChatConfig(BaseSettings):
         default="Ask questions about the codebase and I'll help you understand it!",
         description="Description shown in the chat interface"
     )
+    interface_placeholder: str = Field(
+        default="Ask about the codebase",
+        description="Placeholder text in the chat interface"
+    )
     max_length_per_chunk: int = Field(
         default=8000,
         description="Maximum number of characters per chunk"
