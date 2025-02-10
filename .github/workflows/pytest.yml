@@ -18,10 +18,8 @@ jobs:
     - uses: actions/checkout@v4
     
     - name: Install Poetry
-      run: |
-        curl -sSL https://install.python-poetry.org | POETRY_HOME=/etc/poetry python3 - # Install poetry into /etc/poetry
-        echo "::add-path::/etc/poetry/bin" # Add poetry to PATH
-        
+      uses: snok/install-poetry@v1
+      
     - name: Install dependencies
       run: |
         poetry install --with dev  # This installs both main and dev dependencies
