@@ -4,7 +4,7 @@ addopts = [
 ]
 [project]
 name = "knowlang"
-version = "0.2.0"
+version = "0.2.1"
 description = "AI-powered code understanding assistant that helps developers explore and understand complex codebases through semantic search and intelligent Q&A"
 license = "Apache-2.0"
 authors = [
