@@ -10,9 +10,6 @@ def create_pydantic_model(
 
     if model_str in get_args(KnownModelName):
         return model_str
-    elif model_provider == ModelProvider.HUGGINGFACE:
-        from knowlang.models.huggingface import HuggingFaceModel
-        return HuggingFaceModel(model_name=model_name)
     elif model_provider == ModelProvider.TESTING:
         # should be used for testing purposes only
         pass

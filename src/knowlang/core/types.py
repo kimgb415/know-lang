@@ -23,6 +23,5 @@ class ModelProvider(str, Enum):
     OPENAI = "openai"
     ANTHROPIC = "anthropic"
     OLLAMA = "ollama"
-    HUGGINGFACE = "huggingface"
     VOYAGE = "voyage"
     TESTING = "testing"
