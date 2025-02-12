@@ -3,6 +3,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 from pydantic import Field, field_validator, ValidationInfo
 from pathlib import Path
 import fnmatch
+from knowlang.configs.base import generate_model_config
 from knowlang.core.types import ModelProvider
 from knowlang.configs.chat_config import ChatConfig, ChatbotAnalyticsConfig
 import os
@@ -183,12 +184,9 @@ class EvaluatorConfig(LLMConfig):
     )
 
 class AppConfig(BaseSettings):
-    model_config = SettingsConfigDict(
-        env_file='.env',
-        env_file_encoding='utf-8',
-        env_nested_delimiter='__'
-    )
-    
+    model_config = generate_model_config(
+        env_file=".env.app",
+    )   
     llm: LLMConfig = Field(default_factory=LLMConfig)
     evaluator: EvaluatorConfig = Field(default_factory=EvaluatorConfig)
     reranker: RerankerConfig = Field(default_factory=RerankerConfig)
