@@ -8,7 +8,7 @@ from pprint import pformat
 from rich.progress import Progress
 
 from knowlang.configs.config import AppConfig
-from knowlang.core.types import CodeChunk
+from knowlang.core.types import CodeChunk, DatabaseChunkMetadata
 from knowlang.utils.chunking_util import format_code_summary
 from knowlang.utils.fancy_log import FancyLogger
 from knowlang.utils.model_provider import create_pydantic_model
@@ -16,14 +16,6 @@ from knowlang.models.embeddings import generate_embedding
 
 LOG = FancyLogger(__name__)
 
-class ChunkMetadata(BaseModel):
-    """Model for chunk metadata stored in ChromaDB"""
-    file_path: str
-    start_line: int
-    end_line: int
-    type: str
-    name: str
-    docstring: str = Field(default='')
 
 class CodeSummarizer:
     def __init__(self, config: AppConfig):
@@ -91,7 +83,6 @@ Provide a clean, concise and focused summary. Don't include unnecessary nor gene
         """
         
         result = await self.agent.run(prompt)
-        LOG.debug(f"Summary for chunk {chunk.file_path}:{chunk.start_line}-{chunk.end_line}:\n{pformat(result.data)}")
 
         return format_code_summary(chunk.content, result.data)
     
@@ -99,20 +90,9 @@ Provide a clean, concise and focused summary. Don't include unnecessary nor gene
         """Process a chunk and store it in ChromaDB"""
         summary = await self.summarize_chunk(chunk)
         
-        # Create a unique ID for the chunk
-        relative_path = Path(chunk.file_path).relative_to(self.config.db.codebase_directory).as_posix()
-        chunk_id = f"{relative_path}:{chunk.start_line}-{chunk.end_line}"
-        
         # Create metadata using Pydantic model
-        metadata = ChunkMetadata(   
-            file_path=relative_path,
-            start_line=chunk.start_line,
-            end_line=chunk.end_line,
-            type=chunk.type.value,
-            name=chunk.name,
-            docstring=chunk.docstring if chunk.docstring else ''
-        )
-        
+        metadata = DatabaseChunkMetadata.from_code_chunk(chunk)
+    
         # Get embedding for the summary
         embedding = generate_embedding(summary, self.config.embedding)
         
@@ -121,7 +101,8 @@ Provide a clean, concise and focused summary. Don't include unnecessary nor gene
             documents=[summary],
             embeddings=embedding,
             metadatas=[metadata.model_dump()],
-            ids=[chunk_id]
+            # Create a unique ID for the chunk
+            ids=[chunk.location.to_single_line()]
         )
 
     async def process_chunks(self, chunks: List[CodeChunk]):

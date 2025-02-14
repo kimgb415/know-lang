@@ -1,6 +1,7 @@
 import pytest
 from pathlib import Path
-from knowlang.core.types import ChunkType
+from knowlang.configs.config import AppConfig
+from knowlang.core.types import BaseChunkType
 from tests.test_data.python_files import (
     TEST_FILES,
     INVALID_SYNTAX, 
@@ -12,6 +13,14 @@ from knowlang.core.types import CodeChunk
 from knowlang.parser.languages.python.parser import PythonParser
 from typing import List
 import tempfile
+
+
+@pytest.fixture
+def python_parser(test_config):
+    """Provides initialized Python parser"""
+    parser = PythonParser(test_config)
+    parser.setup()
+    return parser
 
 def find_chunk_by_criteria(chunks: List[CodeChunk], **criteria) -> CodeChunk:
     """Helper function to find a chunk matching given criteria"""
@@ -43,14 +52,14 @@ class TestPythonParser:
         assert python_parser.parser is not None
         assert python_parser.language is not None
 
-    def test_simple_file_parsing(self, python_parser: PythonParser, temp_repo: tempfile.TemporaryDirectory):
+    def test_simple_file_parsing(self, python_parser: PythonParser, test_config: AppConfig):
         """Test parsing a simple Python file with function and class"""
-        chunks = python_parser.parse_file(Path(temp_repo) / "simple.py")
+        chunks = python_parser.parse_file(test_config.db.codebase_directory / "simple.py")
 
         # Test function
         function_chunk = find_chunk_by_criteria(
             chunks,
-            type=ChunkType.FUNCTION,
+            type=BaseChunkType.FUNCTION,
             name="hello_world"
         )
         assert function_chunk is not None
@@ -65,7 +74,7 @@ class TestPythonParser:
         # Test class
         class_chunk = find_chunk_by_criteria(
             chunks,
-            type=ChunkType.CLASS,
+            type=BaseChunkType.CLASS,
             name="SimpleClass"
         )
         assert class_chunk is not None
@@ -77,14 +86,14 @@ class TestPythonParser:
             expected.content_snippet
         )
 
-    def test_complex_file_parsing(self, python_parser: PythonParser, temp_repo: tempfile.TemporaryDirectory):
+    def test_complex_file_parsing(self, python_parser: PythonParser, test_config: AppConfig):
         """Test parsing a complex Python file"""
-        chunks = python_parser.parse_file(Path(temp_repo) / "complex.py")
+        chunks = python_parser.parse_file(Path(test_config.db.codebase_directory) / "complex.py")
         
         # Test complex function
         complex_func = find_chunk_by_criteria(
             chunks,
-            type=ChunkType.FUNCTION,
+            type=BaseChunkType.FUNCTION,
             name="complex_function"
         )
         assert complex_func is not None
@@ -99,7 +108,7 @@ class TestPythonParser:
         # Test complex class
         complex_class = find_chunk_by_criteria(
             chunks,
-            type=ChunkType.CLASS,
+            type=BaseChunkType.CLASS,
             name="ComplexClass"
         )
         assert complex_class is not None
@@ -111,28 +120,28 @@ class TestPythonParser:
             expected.content_snippet
         )
 
-    def test_error_handling(self, python_parser: PythonParser, temp_repo: tempfile.TemporaryDirectory):
+    def test_error_handling(self, python_parser: PythonParser, test_config: AppConfig):
         """Test error handling for various error cases"""
         # Test invalid syntax
-        invalid_file = Path(temp_repo) / "invalid.py"
+        invalid_file = Path(test_config.db.codebase_directory) / "invalid.py"
         invalid_file.write_text(INVALID_SYNTAX)
         chunks = python_parser.parse_file(invalid_file)
         assert chunks == []
         
         # Test non-existent file
-        nonexistent = Path(temp_repo) / "nonexistent.py"
+        nonexistent = Path(test_config.db.codebase_directory) / "nonexistent.py"
         chunks = python_parser.parse_file(nonexistent)
         assert chunks == []
         
         # Test non-Python file
-        non_python = Path(temp_repo) / "readme.md"
+        non_python = Path(test_config.db.codebase_directory) / "readme.md"
         non_python.write_text("# README")
         chunks = python_parser.parse_file(non_python)
         assert chunks == []
 
-    def test_file_size_limits(self, python_parser: PythonParser, temp_repo: tempfile.TemporaryDirectory):
+    def test_file_size_limits(self, python_parser: PythonParser, test_config: AppConfig):
         """Test file size limit enforcement"""
-        large_file = Path(temp_repo) / "large.py"
+        large_file = Path(test_config.db.codebase_directory) / "large.py"
         # Create a file larger than the limit
         large_file.write_text("x = 1\n" * 1_000_000)
         

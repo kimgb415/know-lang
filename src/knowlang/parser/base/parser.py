@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import List
 from pathlib import Path
-from knowlang.core.types import CodeChunk
+from knowlang.core.types import CodeChunk, LanguageEnum
 from knowlang.configs.config import AppConfig, LanguageConfig
 from tree_sitter import Language, Parser
 
@@ -10,6 +10,7 @@ class LanguageParser(ABC):
     
     def __init__(self, config: AppConfig):
         self.config : AppConfig = config
+        self.language_name : LanguageEnum = None
         self.language : Language = None
         self.parser : Parser = None
         self.language_config : LanguageConfig = None

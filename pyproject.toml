@@ -45,7 +45,8 @@ dependencies = [
     "ollama (>=0.4.7,<0.5.0)",
     "gradio (>=5.13.1,<6.0.0)",
     "voyageai (>=0.3.2,<0.4.0)",
-    "mixpanel (>=4.10.1,<5.0.0)"
+    "mixpanel (>=4.10.1,<5.0.0)",
+    "tree-sitter-cpp (>=0.23.4,<0.24.0)"
 ]
 
 [project.urls]

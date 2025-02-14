@@ -4,7 +4,7 @@ import tree_sitter_python
 from tree_sitter import Language, Parser, Node
 
 from knowlang.parser.base.parser import LanguageParser
-from knowlang.core.types import CodeChunk, ChunkType
+from knowlang.core.types import BaseChunkType, CodeChunk, CodeLocation, LanguageEnum
 from knowlang.utils.fancy_log import FancyLogger
 
 LOG = FancyLogger(__name__)
@@ -15,6 +15,7 @@ class PythonParser(LanguageParser):
     def setup(self) -> None:
         """Initialize tree-sitter with Python language support"""
         self.language = Language(tree_sitter_python.language())
+        self.language_name = LanguageEnum.PYTHON
         self.parser = Parser(self.language)
         self.language_config = self.config.parser.languages["python"]
     
@@ -60,12 +61,15 @@ class PythonParser(LanguageParser):
             raise ValueError(f"Could not find class name in node: {node.text}")
         
         return CodeChunk(
-            type=ChunkType.CLASS,
+            language=self.language_name,
+            type=BaseChunkType.CLASS,
             name=name,
             content=source_code[node.start_byte:node.end_byte].decode('utf-8'),
-            start_line=node.start_point[0],
-            end_line=node.end_point[0],
-            file_path=str(file_path),
+            location=CodeLocation(
+                file_path=str(file_path),
+                start_line=node.start_point[0],
+                end_line=node.end_point[0]
+            ),
             docstring=self._get_preceding_docstring(node, source_code)
         )
 
@@ -93,12 +97,15 @@ class PythonParser(LanguageParser):
             )
         
         return CodeChunk(
-            type=ChunkType.FUNCTION,
+            language=self.language_name,
+            type=BaseChunkType.FUNCTION,
             name=name,
             content=source_code[node.start_byte:node.end_byte].decode('utf-8'),
-            start_line=node.start_point[0],
-            end_line=node.end_point[0],
-            file_path=str(file_path),
+            location=CodeLocation(
+                file_path=str(file_path),
+                start_line=node.start_point[0],
+                end_line=node.end_point[0]
+            ),
             parent_name=parent_name,
             docstring=self._get_preceding_docstring(node, source_code)
         )
@@ -129,13 +136,14 @@ class PythonParser(LanguageParser):
                 return []
 
             chunks: List[CodeChunk] = []
+            relative_path = file_path.relative_to(self.config.db.codebase_directory).as_posix()
             
             # Process the syntax tree
             for node in tree.root_node.children:
                 if node.type == "class_definition":
-                    chunks.append(self._process_class(node, source_code, file_path))
+                    chunks.append(self._process_class(node, source_code, relative_path))
                 elif node.type == "function_definition":
-                    chunks.append(self._process_function(node, source_code, file_path))
+                    chunks.append(self._process_function(node, source_code, relative_path))
                 else:
                     # Skip other node types for now
                     pass
