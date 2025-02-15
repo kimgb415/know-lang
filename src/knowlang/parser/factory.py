@@ -28,7 +28,7 @@ class CodeParserFactory():
         
         # Find parser class for this extension
         for lang, parser_class in self._parser_classes.items():
-            if not self.config.parser.languages[lang].enabled:
+            if not self.config.parser.languages.get(lang, None) or not self.config.parser.languages[lang].enabled:
                 continue
                 
             parser = self._parsers.get(lang)
