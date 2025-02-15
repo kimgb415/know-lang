@@ -2,6 +2,7 @@ from typing import Dict, Type, Optional
 from pathlib import Path
 
 from knowlang.parser.base.parser import LanguageParser
+from knowlang.parser.languages.cpp.parser import CppParser
 from knowlang.parser.languages.python.parser import PythonParser
 from knowlang.configs.config import AppConfig
 
@@ -17,6 +18,7 @@ class CodeParserFactory():
         """Register available parser implementations"""
         return {
             "python": PythonParser,
+            'cpp': CppParser,
             # Add more languages here
         }
     
