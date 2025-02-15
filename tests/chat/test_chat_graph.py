@@ -16,14 +16,13 @@ from knowlang.chat_bot.chat_graph import (
     stream_chat_progress
 )
 
-
 @pytest.mark.asyncio
 @patch('knowlang.chat_bot.chat_graph.Agent')
-async def test_polish_question_node(mock_agent_class, mock_config):
+async def test_polish_question_node(mock_agent_class, mock_config, mock_vector_store):
     """Test that PolishQuestionNode properly refines questions"""
     node = PolishQuestionNode()
     state = ChatGraphState(original_question="how does this work?")
-    deps = ChatGraphDeps(collection=Mock(), config=mock_config)
+    deps = ChatGraphDeps(vector_store=mock_vector_store, config=mock_config)
     ctx = GraphRunContext(state=state, deps=deps)
     
     mock_answer = Mock()
@@ -39,24 +38,29 @@ async def test_polish_question_node(mock_agent_class, mock_config):
 @pytest.mark.asyncio
 @patch('knowlang.chat_bot.chat_graph.generate_embedding')
 @patch('knowlang.chat_bot.chat_graph.voyageai')
-async def test_retrieve_context_node_success(mock_voyageai, mock_embedding_generator, mock_collection, mock_config):
+async def test_retrieve_context_node_success(
+    mock_voyageai, 
+    mock_embedding_generator, 
+    mock_config, 
+    populated_mock_store
+):
     """Test successful context retrieval with reranking"""
     node = RetrieveContextNode()
     state = ChatGraphState(
         original_question="test question",
         polished_question="refined test question"
     )
-    deps = ChatGraphDeps(collection=mock_collection, config=mock_config)
+    deps = ChatGraphDeps(vector_store=populated_mock_store, config=mock_config)
     ctx = GraphRunContext(state=state, deps=deps)
 
-    mock_embedding = [0.1, 0.2, 0.3]  # Sample embedding vector
+    # Mock embedding generation
+    mock_embedding = [1.0, 0.0, 0.0]  # This will match first test document
     mock_embedding_generator.return_value = mock_embedding
     mock_voyage_client = mock_voyageai.Client.return_value
     mock_rerank = Mock()
-
     mock_rerank.return_value.results = [
-        RerankingResult(relevance_score=0.8, document="mock code chunk 1", index=0),
-        RerankingResult(relevance_score=0.6, document="mock code chunk 2", index=1)
+        RerankingResult(relevance_score=0.8, document="def test_function(): pass", index=0),
+        RerankingResult(relevance_score=0.6, document="class TestClass: pass", index=1)
     ]
     mock_voyage_client.rerank = mock_rerank
 
@@ -64,22 +68,22 @@ async def test_retrieve_context_node_success(mock_voyageai, mock_embedding_gener
 
     assert isinstance(next_node, AnswerQuestionNode)
     assert ctx.state.retrieved_context is not None
-    assert len(ctx.state.retrieved_context.chunks) == 1 # Only one chunk above threshold
-    assert ctx.state.retrieved_context.chunks[0] == "mock code chunk 1"
+    assert len(ctx.state.retrieved_context.chunks) == 1  # Only one chunk above threshold
+    assert ctx.state.retrieved_context.chunks[0] == "def test_function(): pass"
 
 @pytest.mark.asyncio
 @patch('knowlang.chat_bot.chat_graph.Agent')
-async def test_answer_question_node(mock_agent_class, mock_config):
+async def test_answer_question_node(mock_agent_class, mock_config, populated_mock_store):
     """Test that AnswerQuestionNode generates appropriate answers"""
     node = AnswerQuestionNode()
     state = ChatGraphState(
         original_question="test question",
         retrieved_context=RetrievedContext(
-            chunks=["mock code chunk"],
-            metadatas=[{'file_path': 'test.py', 'start_line': 1, 'end_line': 10}]
+            chunks=["def test_function(): pass"],
+            metadatas=[{"file_path": "test1.py", "start_line": 1, "end_line": 2}]
         )
     )
-    deps = ChatGraphDeps(collection=Mock(), config=mock_config)
+    deps = ChatGraphDeps(vector_store=populated_mock_store, config=mock_config)
     ctx = GraphRunContext(state=state, deps=deps)
 
     mock_answer = Mock()
@@ -94,14 +98,14 @@ async def test_answer_question_node(mock_agent_class, mock_config):
 
 
 @pytest.mark.asyncio
-async def test_answer_question_node_no_context(mock_config):
+async def test_answer_question_node_no_context(mock_config, mock_vector_store):
     """Test AnswerQuestionNode behavior when no context is found"""
     node = AnswerQuestionNode()
     state = ChatGraphState(
         original_question="test question",
         retrieved_context=RetrievedContext(chunks=[], metadatas=[])
     )
-    deps = ChatGraphDeps(collection=Mock(), config=mock_config)
+    deps = ChatGraphDeps(vector_store=mock_vector_store, config=mock_config)
     ctx = GraphRunContext(state=state, deps=deps)
 
     
@@ -113,7 +117,12 @@ async def test_answer_question_node_no_context(mock_config):
 @pytest.mark.asyncio
 @patch('knowlang.chat_bot.chat_graph.logfire')
 @patch('knowlang.chat_bot.chat_graph.chat_graph')
-async def test_stream_chat_progress_success(mock_chat_graph, mock_logfire, mock_collection, mock_config):
+async def test_stream_chat_progress_success(
+    mock_chat_graph, 
+    mock_logfire, 
+    mock_config, 
+    populated_mock_store
+):
     """Test successful streaming chat progress with all stages"""
     # Mock the span context manager
     mock_span = Mock()
@@ -127,8 +136,8 @@ async def test_stream_chat_progress_success(mock_chat_graph, mock_logfire, mock_
         End(ChatResult(         # Finally return the result
             answer="Test answer",
             retrieved_context=RetrievedContext(
-                chunks=["test code"],
-                metadatas=[{"file_path": "test.py", "start_line": 1, "end_line": 10}]
+                chunks=["def test_function(): pass"],
+                metadatas=[{"file_path": "test1.py", "start_line": 1, "end_line": 2}]
             )
         ))
     ]
@@ -137,7 +146,7 @@ async def test_stream_chat_progress_success(mock_chat_graph, mock_logfire, mock_
     results = []
     async for result in stream_chat_progress(
         question="test question",
-        collection=mock_collection,
+        vector_store=populated_mock_store,
         config=mock_config
     ):
         results.append(result)
@@ -169,7 +178,7 @@ async def test_stream_chat_progress_success(mock_chat_graph, mock_logfire, mock_
 @pytest.mark.asyncio
 @patch('knowlang.chat_bot.chat_graph.logfire')
 @patch('knowlang.chat_bot.chat_graph.chat_graph')
-async def test_stream_chat_progress_node_error(mock_chat_graph, mock_logfire, mock_collection, mock_config):
+async def test_stream_chat_progress_node_error(mock_chat_graph, mock_logfire, mock_vector_store, mock_config):
     """Test streaming chat progress when a node execution fails"""
     # Mock the span context manager
     mock_span = Mock()
@@ -183,7 +192,7 @@ async def test_stream_chat_progress_node_error(mock_chat_graph, mock_logfire, mo
     results = []
     async for result in stream_chat_progress(
         question="test question",
-        collection=mock_collection,
+        vector_store=mock_vector_store,
         config=mock_config
     ):
         results.append(result)
@@ -202,7 +211,7 @@ async def test_stream_chat_progress_node_error(mock_chat_graph, mock_logfire, mo
 @pytest.mark.asyncio
 @patch('knowlang.chat_bot.chat_graph.logfire')
 @patch('knowlang.chat_bot.chat_graph.chat_graph')
-async def test_stream_chat_progress_invalid_node(mock_chat_graph, mock_logfire, mock_collection, mock_config):
+async def test_stream_chat_progress_invalid_node(mock_chat_graph, mock_logfire, mock_vector_store, mock_config):
     """Test streaming chat progress when an invalid node type is returned"""
     # Mock the span context manager
     mock_span = Mock()
@@ -216,7 +225,7 @@ async def test_stream_chat_progress_invalid_node(mock_chat_graph, mock_logfire, 
     results = []
     async for result in stream_chat_progress(
         question="test question",
-        collection=mock_collection,
+        vector_store=mock_vector_store,
         config=mock_config
     ):
         results.append(result)
@@ -228,7 +237,7 @@ async def test_stream_chat_progress_invalid_node(mock_chat_graph, mock_logfire, 
 
 @pytest.mark.asyncio
 @patch('knowlang.chat_bot.chat_graph.logfire')
-async def test_stream_chat_progress_general_error(mock_logfire, mock_collection, mock_config):
+async def test_stream_chat_progress_general_error(mock_logfire, mock_vector_store, mock_config):
     """Test streaming chat progress when a general error occurs"""
     # Mock the span context manager to raise an error
     mock_logfire.span.side_effect = Exception("Test general error")
@@ -237,7 +246,7 @@ async def test_stream_chat_progress_general_error(mock_logfire, mock_collection,
     results = []
     async for result in stream_chat_progress(
         question="test question",
-        collection=mock_collection,
+        vector_store=mock_vector_store,
         config=mock_config
     ):
         results.append(result)

@@ -5,9 +5,10 @@ from knowlang.utils.fancy_log import FancyLogger
 from knowlang.utils.rate_limiter import RateLimiter
 from knowlang.chat_bot.chat_graph import stream_chat_progress, ChatStatus
 from knowlang.chat_bot.feedback import ChatAnalytics
-import chromadb
 from typing import List, Dict, AsyncGenerator
 from gradio import ChatMessage
+
+from knowlang.vector_stores.factory import VectorStoreFactory
 
 
 LOG = FancyLogger(__name__)
@@ -34,18 +35,10 @@ class CodeContext:
 class CodeQAChatInterface:
     def __init__(self, config: AppConfig):
         self.config = config
-        self._init_chroma()
+        self.vector_store = VectorStoreFactory.get(config.db)
         self.rate_limiter = RateLimiter()
         self.chat_analytics = ChatAnalytics(config.chat_analytics)
-        
-    def _init_chroma(self):
-        """Initialize ChromaDB connection"""
-        self.db_client = chromadb.PersistentClient(
-            path=str(self.config.db.persist_directory)
-        )
-        self.collection = self.db_client.get_collection(
-            name=self.config.db.collection_name
-        )
+    
     def _format_code_block(self, code : str,  metadata: Dict) -> str:
         """Format a single code block with metadata"""
         context = CodeContext.from_metadata(metadata)
@@ -80,7 +73,7 @@ class CodeQAChatInterface:
         code_blocks_added = False
         
         try:
-            async for result in stream_chat_progress(message, self.collection, self.config):
+            async for result in stream_chat_progress(message, self.vector_store, self.config):
                 # Handle progress updates
                 if result.status != ChatStatus.COMPLETE:
                     if current_progress:

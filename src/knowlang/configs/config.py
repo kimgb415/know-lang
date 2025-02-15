@@ -1,10 +1,10 @@
-from typing import Optional, Dict, Any, List
+from typing import Literal, Optional, Dict, Any, List
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from pydantic import Field, field_validator, ValidationInfo
 from pathlib import Path
 import fnmatch
 from knowlang.configs.base import generate_model_config
-from knowlang.core.types import ModelProvider
+from knowlang.core.types import ModelProvider, VectorStoreProvider
 from knowlang.configs.chat_config import ChatConfig, ChatbotAnalyticsConfig
 import os
 
@@ -132,6 +132,10 @@ class LLMConfig(BaseSettings):
         return _validate_api_key(v, info)
 
 class DBConfig(BaseSettings):
+    db_provider: VectorStoreProvider = Field(
+        default=VectorStoreProvider.CHROMA,
+        description="Vector Database provider"
+    )
     persist_directory: Path = Field(
         default=Path("./chromadb"),
         description="Directory to store ChromaDB files"
@@ -143,6 +147,10 @@ class DBConfig(BaseSettings):
     codebase_directory: Path = Field(
         default=Path("./"),
         description="Root directory of the codebase to analyze"
+    )
+    similarity_metric: Literal['cosine'] = Field(
+        default='cosine',
+        description="Similarity metric for vector search"
     )
 
 class RerankerConfig(BaseSettings):

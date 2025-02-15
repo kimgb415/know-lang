@@ -83,3 +83,8 @@ class ModelProvider(str, Enum):
     OLLAMA = "ollama"
     VOYAGE = "voyage"
     TESTING = "testing"
+
+class VectorStoreProvider(str, Enum):
+    """Supported vector store providers"""
+    CHROMA = "chroma"
+    TESTING = "testing"
