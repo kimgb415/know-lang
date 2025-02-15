@@ -41,6 +41,13 @@ class TestCppParser:
         }
 
         /**
+         * A simple function that minus two numbers
+         */
+        MY_MACRO int MyNamespace::minus(int a, int b) {
+            return a - b;
+        }
+
+        /**
          * A simple class for demonstration
          */
         class SimpleClass {
@@ -49,6 +56,13 @@ class TestCppParser:
                 std::cout << "Hello" << std::endl;
             }
         };
+
+        // A simple dll export class
+        class __declspec(dllexport) ExportedClass {
+        public:
+            void export_method() {}
+        };
+
         """
         test_file = Path(test_config.db.codebase_directory) / "simple.cpp"
         test_file.write_text(simple_cpp)
@@ -60,11 +74,23 @@ class TestCppParser:
         assert "A simple function that adds two numbers" in function_chunk.docstring
         assert "int add(int a, int b)" in function_chunk.content
 
+        # Test function
+        function_chunk = find_chunk_by_criteria(chunks, type=BaseChunkType.FUNCTION, name="MyNamespace::minus")
+        assert function_chunk is not None
+        assert "A simple function that minus two numbers" in function_chunk.docstring
+        assert "MY_MACRO int MyNamespace::minus(int a, int b)" in function_chunk.content
+
         # Test class
         class_chunk = find_chunk_by_criteria(chunks, type=BaseChunkType.CLASS, name="SimpleClass")
         assert class_chunk is not None
         assert "A simple class for demonstration" in class_chunk.docstring
         assert "class SimpleClass" in class_chunk.content
+
+        # Test class with dll export
+        exported_chunk = find_chunk_by_criteria(chunks, type=BaseChunkType.CLASS, name="ExportedClass")
+        assert exported_chunk is not None
+        assert "__declspec(dllexport)" in exported_chunk.content
+
 
     def test_namespace_handling(self, cpp_parser: CppParser, test_config: AppConfig):
         """Test handling of namespaces"""
@@ -82,6 +108,13 @@ class TestCppParser:
                 void method() {}
             };
         }
+
+        class MyNamespace::SimpleClass {
+        public:
+            void hello() {
+                std::cout << "Hello" << std::endl;
+            }
+        };
         """
         test_file = Path(test_config.db.codebase_directory) / "namespace.cpp"
         test_file.write_text(namespace_cpp)
@@ -94,6 +127,9 @@ class TestCppParser:
         cls = find_chunk_by_criteria(chunks, type=BaseChunkType.CLASS, name="NamespaceClass")
         assert cls is not None
         assert cls.metadata.namespace == "test"
+
+        cls = find_chunk_by_criteria(chunks, type=BaseChunkType.CLASS, name="MyNamespace::SimpleClass")
+        assert cls is not None
 
     def test_template_handling(self, cpp_parser: CppParser, test_config: AppConfig):
         """Test handling of template classes and functions"""

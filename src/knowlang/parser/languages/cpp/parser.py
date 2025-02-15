@@ -68,21 +68,8 @@ class CppParser(LanguageParser):
     def _process_class(self, node: Node, source_code: bytes, file_path: Path) -> CodeChunk:
         """Process a class node and return a CodeChunk"""
         # In C++, we need to look for the identifier within a sequence of nodes
-        name = None
-        for child in node.children:
-            if child.type == "name":
-                # The name node might contain the class identifier
-                for subchild in child.children:
-                    if subchild.type == "type_identifier":
-                        name = subchild.text.decode('utf-8')
-                        break
-            elif child.type == "type_identifier":
-                # Sometimes the identifier is directly a child
-                name = child.text.decode('utf-8')
-                break
-            if name:
-                break
-        
+        name = node.child_by_field_name("name").text.decode('utf-8')
+
         if not name:
             raise ValueError(f"Could not find class name in node: {node.text}")
         
@@ -110,7 +97,7 @@ class CppParser(LanguageParser):
         for child in node.children:
             if child.type == "function_declarator":
                 for subchild in child.children:
-                    if subchild.type == "identifier":
+                    if subchild.type == "identifier" or "qualified_identifier":
                         name = subchild.text.decode('utf-8')
                         break
             if name:
