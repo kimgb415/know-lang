@@ -79,52 +79,64 @@ class CodeQAChatInterface:
         current_progress: ChatMessage | None = None
         code_blocks_added = False
         
-        async for result in stream_chat_progress(message, self.collection, self.config):
-            # Handle progress updates
-            if result.status != ChatStatus.COMPLETE:
+        try:
+            async for result in stream_chat_progress(message, self.collection, self.config):
+                # Handle progress updates
+                if result.status != ChatStatus.COMPLETE:
+                    if current_progress:
+                        history.remove(current_progress)
+                    
+                    current_progress = ChatMessage(
+                        role="assistant",
+                        content=result.progress_message,
+                        metadata={
+                            "title": f"{result.status.value.title()} Progress",
+                            "status": "pending" if result.status != ChatStatus.ERROR else "error"
+                        }
+                    )
+                    history.append(current_progress)
+                    yield history
+                    continue
+
+                # When complete, remove progress message and add final content
                 if current_progress:
                     history.remove(current_progress)
-                
-                current_progress = ChatMessage(
-                    role="assistant",
-                    content=result.progress_message,
-                    metadata={
-                        "title": f"{result.status.value.title()} Progress",
-                        "status": "pending" if result.status != ChatStatus.ERROR else "error"
-                    }
-                )
-                history.append(current_progress)
-                yield history
-                continue
+                    current_progress = None
 
-            # When complete, remove progress message and add final content
-            if current_progress:
-                history.remove(current_progress)
-                current_progress = None
+                # Add code blocks before final answer if not added yet
+                if not code_blocks_added and result.retrieved_context and result.retrieved_context.metadatas:
+                    total_code_blocks = []
+                    for chunk, metadata in zip(result.retrieved_context.chunks, result.retrieved_context.metadatas):
+                        code_block = self._format_code_block(chunk, metadata)
+                        if code_block:
+                            total_code_blocks.append(code_block)
 
-            # Add code blocks before final answer if not added yet
-            if not code_blocks_added and result.retrieved_context and result.retrieved_context.metadatas:
-                total_code_blocks = []
-                for chunk, metadata in zip(result.retrieved_context.chunks, result.retrieved_context.metadatas):
-                    code_block = self._format_code_block(chunk, metadata)
-                    if code_block:
-                        total_code_blocks.append(code_block)
+                    code_blocks_added = True
+                    history.append(ChatMessage(
+                        role="assistant",
+                        content='\n\n'.join(total_code_blocks),
+                        metadata={
+                            "title": "💻 Code Context",
+                            "collapsible": True
+                        }
+                    ))
+                    yield history
 
-                code_blocks_added = True
+                # Add final answer
                 history.append(ChatMessage(
                     role="assistant",
-                    content='\n\n'.join(total_code_blocks),
-                    metadata={
-                        "title": "💻 Code Context",
-                        "collapsible": True
-                    }
+                    content=result.answer
                 ))
                 yield history
-
-            # Add final answer
+        except Exception as e:
+            LOG.error(f"Error in stream_response: {e}")
             history.append(ChatMessage(
                 role="assistant",
-                content=result.answer
+                content=f"An error occurred while processing your request: {str(e)}",
+                metadata={
+                    "title": "❌ Error",
+                    "status": "error"
+                }
             ))
             yield history
 
