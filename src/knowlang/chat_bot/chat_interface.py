@@ -7,7 +7,6 @@ from knowlang.chat_bot.chat_graph import stream_chat_progress, ChatStatus
 from knowlang.chat_bot.feedback import ChatAnalytics
 import chromadb
 from typing import List, Dict, AsyncGenerator
-from pathlib import Path
 from gradio import ChatMessage
 
 
@@ -55,7 +54,7 @@ class CodeQAChatInterface:
     
     def _handle_feedback(self, like_data: gr.LikeData, history: List[ChatMessage], request: gr.Request):
          # Get the query and response pair
-        query = history[like_data.index - 1]["content"]  # User question
+        query = history[like_data.index - 1].content  # User question
         
         # Track feedback
         self.chat_analytics.track_feedback(
@@ -76,24 +75,6 @@ class CodeQAChatInterface:
         history.append(ChatMessage(role="user", content=message))
         yield history
 
-        # Check rate limit before processing
-        client_ip : str = request.request.client.host
-        print(f"Client IP: {client_ip}")
-        if self.rate_limiter.check_rate_limit(client_ip):
-            wait_time = self.rate_limiter.get_remaining_time(client_ip)
-            rate_limit_message = (
-                f"Rate limit exceeded. Please wait {wait_time:.0f} seconds before sending another message."
-            )
-            history.append(ChatMessage(
-                role="assistant",
-                content=rate_limit_message,
-                metadata={
-                    "title": "⚠️ Rate Limit Warning",
-                    "status": "done"
-                }
-            ))
-            yield history
-            return
         
         current_progress: ChatMessage | None = None
         code_blocks_added = False
