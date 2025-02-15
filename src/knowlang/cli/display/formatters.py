@@ -30,9 +30,7 @@ class TableFormatter:
             table.add_row(
                 chunk.type.value,
                 chunk.name or "N/A",
-                str(chunk.file_path),
-                f"{chunk.start_line}-{chunk.end_line}",
-                chunk.parent_name or "N/A"
+                chunk.location.to_single_line(),
             )
         
         console.print(table)
