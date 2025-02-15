@@ -144,12 +144,14 @@ class CppParser(LanguageParser):
                 
             tree = self.parser.parse(source_code)
             chunks: List[CodeChunk] = []
+
+            relative_path = file_path.relative_to(self.config.db.codebase_directory).as_posix()
             
             def traverse_node(node: Node):
                 """Recursively traverse the syntax tree"""
                 if node.type in ("class_specifier", "struct_specifier"):
                     try:
-                        chunks.append(self._process_class(node, source_code, file_path))
+                        chunks.append(self._process_class(node, source_code, relative_path))
                     except ValueError as e:
                         LOG.warning(f"Failed to process class: {str(e)}")
                     finally:
@@ -157,7 +159,7 @@ class CppParser(LanguageParser):
                         return
                 elif node.type == "function_definition":
                     try:
-                        chunks.append(self._process_function(node, source_code, file_path))
+                        chunks.append(self._process_function(node, source_code, relative_path))
                     except ValueError as e:
                         LOG.warning(f"Failed to process function: {str(e)}")
                     finally:
