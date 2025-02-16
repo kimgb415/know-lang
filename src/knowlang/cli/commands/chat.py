@@ -1,9 +1,10 @@
 """Command implementation for the chat interface."""
-import chromadb
 from knowlang.chat_bot.chat_interface import create_chatbot
 from knowlang.configs.config import AppConfig
 from knowlang.cli.types import ChatCommandArgs
 from knowlang.utils.fancy_log import FancyLogger
+from knowlang.vector_stores.factory import VectorStoreFactory
+from knowlang.vector_stores.base import VectorStoreError
 
 LOG = FancyLogger(__name__)
 
@@ -23,13 +24,12 @@ async def chat_command(args: ChatCommandArgs) -> None:
     """
     config = create_config(args)
     
-    # Verify database exists
+    # Initialize vector store
     try:
-        db_client = chromadb.PersistentClient(path=str(config.db.persist_directory))
-        db_client.get_collection(name=config.db.collection_name)
-    except Exception as e:
+        VectorStoreFactory.get(config.db)
+    except VectorStoreError as e:
         LOG.error(
-            "Database not found. Please run 'knowlang parse' first to index your codebase."
+            "Vector store initialization failed. Please run 'knowlang parse' first to index your codebase."
             f"\nError: {str(e)}"
         )
         return

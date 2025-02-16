@@ -7,6 +7,8 @@ from knowlang.cli.commands.parse import parse_command
 from knowlang.cli.commands.chat import chat_command, create_config
 from knowlang.cli.types import ParseCommandArgs, ChatCommandArgs
 from knowlang.configs.config import AppConfig
+from knowlang.vector_stores.base import VectorStoreError
+from knowlang.vector_stores.mock import MockVectorStore
 
 @pytest.fixture
 def mock_parser_factory():
@@ -37,9 +39,18 @@ def mock_formatter():
         yield formatter
 
 @pytest.fixture
-def mock_chromadb():
-    with patch('knowlang.cli.commands.chat.chromadb') as db:
-        yield db
+def mock_vector_store():
+    """Mock vector store instance"""
+    store = MockVectorStore()
+    return store
+
+@pytest.fixture
+def mock_vector_store_factory(mock_vector_store: MockVectorStore):
+    """Mock vector store factory"""
+    with patch('knowlang.cli.commands.chat.VectorStoreFactory') as factory:
+        factory.get.return_value = mock_vector_store
+        yield factory
+
 
 @pytest.fixture
 def mock_chatbot():
@@ -130,8 +141,13 @@ class TestParseCommand:
 
 class TestChatCommand:
     @pytest.mark.asyncio
-    async def test_chat_with_existing_db(self, mock_chromadb, mock_chatbot):
-        """Test chat command with an existing database."""
+    async def test_chat_with_working_vector_store(
+        self, 
+        mock_vector_store, 
+        mock_vector_store_factory,
+        mock_chatbot
+    ):
+        """Test chat command with a working vector store."""
         args = ChatCommandArgs(
             verbose=False,
             config=None,
@@ -142,13 +158,15 @@ class TestChatCommand:
             server_name=None
         )
         
-        mock_db_client = Mock()
-        mock_chromadb.PersistentClient.return_value = mock_db_client
+        # Setup mock vector store
+        mock_vector_store_factory.get.return_value = mock_vector_store
         
         await chat_command(args)
         
-        mock_chromadb.PersistentClient.assert_called_once()
-        mock_db_client.get_collection.assert_called_once()
+        # Verify vector store creation
+        mock_vector_store_factory.get.assert_called_once()
+        
+        # Verify chatbot creation and launch
         mock_chatbot.assert_called_once()
         mock_chatbot.return_value.launch.assert_called_once_with(
             server_port=None,
@@ -157,8 +175,12 @@ class TestChatCommand:
         )
 
     @pytest.mark.asyncio
-    async def test_chat_with_missing_db(self, mock_chromadb, mock_chatbot):
-        """Test chat command with missing database."""
+    async def test_chat_with_vector_store_error(
+        self,
+        mock_vector_store_factory,
+        mock_chatbot
+    ):
+        """Test chat command when vector store initialization fails."""
         args = ChatCommandArgs(
             verbose=False,
             config=None,
@@ -169,14 +191,15 @@ class TestChatCommand:
             server_name=None
         )
         
-        mock_db_client = Mock()
-        mock_db_client.get_collection.side_effect = Exception("DB not found")
-        mock_chromadb.PersistentClient.return_value = mock_db_client
+        # Setup mock vector store to raise error
+        mock_vector_store_factory.get.side_effect = VectorStoreError("Store not found")
         
         await chat_command(args)
         
-        mock_chromadb.PersistentClient.assert_called_once()
-        mock_db_client.get_collection.assert_called_once()
+        # Verify vector store creation attempt
+        mock_vector_store_factory.get.assert_called_once()
+        
+        # Verify chatbot was not created
         mock_chatbot.assert_not_called()
 
     def test_create_config_with_file(self, tmp_path):

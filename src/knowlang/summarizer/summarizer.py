@@ -1,10 +1,5 @@
-from pathlib import Path
 from typing import List
-import chromadb
-from chromadb.errors import InvalidCollectionException
 from pydantic_ai import Agent
-from pydantic import BaseModel, Field
-from pprint import pformat
 from rich.progress import Progress
 
 from knowlang.configs.config import AppConfig
@@ -13,7 +8,6 @@ from knowlang.utils.chunking_util import format_code_summary
 from knowlang.utils.fancy_log import FancyLogger
 from knowlang.utils.model_provider import create_pydantic_model
 from knowlang.models.embeddings import generate_embedding
-from knowlang.vector_stores.base import VectorStore
 from knowlang.vector_stores.factory import VectorStoreFactory
 
 LOG = FancyLogger(__name__)
