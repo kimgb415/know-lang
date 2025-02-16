@@ -3,6 +3,7 @@ from pathlib import Path
 import chromadb
 from typing import List, Dict, Any, Literal, Optional
 from chromadb.config import Settings
+from chromadb.errors import InvalidCollectionException
 
 from knowlang.vector_stores.base import VectorStore, SearchResult, VectorStoreError, VectorStoreInitError
 
@@ -35,9 +36,8 @@ class ChromaVectorStore(VectorStore):
             try:
                 self.collection = self.client.get_collection(
                     name=self.collection_name,
-                    metadata={"hnsw:space": self.similarity_metric}
                 )
-            except ValueError:  # Collection doesn't exist
+            except InvalidCollectionException:  # Collection doesn't exist
                 self.collection = self.client.create_collection(
                     name=self.collection_name,
                     metadata={"hnsw:space": self.similarity_metric}
