@@ -13,15 +13,24 @@ from knowlang.utils.chunking_util import format_code_summary
 from knowlang.utils.fancy_log import FancyLogger
 from knowlang.utils.model_provider import create_pydantic_model
 from knowlang.models.embeddings import generate_embedding
+from knowlang.vector_stores.base import VectorStore
+from knowlang.vector_stores.factory import VectorStoreFactory
 
 LOG = FancyLogger(__name__)
 
 
 class CodeSummarizer:
-    def __init__(self, config: AppConfig):
+    def __init__(
+        self, 
+        config: AppConfig,
+    ):
+        """
+        Initialize CodeSummarizer with config and optional vector store.
+        If vector store is not provided, creates one based on config.
+        """
         self.config = config
+        self.vector_store = VectorStoreFactory.get(config.db)
         self._init_agent()
-        self._init_db()
 
     def _init_agent(self):
         """Initialize the LLM agent with configuration"""
@@ -53,23 +62,6 @@ Provide a clean, concise and focused summary. Don't include unnecessary nor gene
             model_settings=self.config.llm.model_settings
         )
 
-    def _init_db(self):
-        """Initialize ChromaDB with configuration"""
-        self.db_client = chromadb.PersistentClient(
-            path=str(self.config.db.persist_directory)
-        )
-        
-        try:
-            self.collection = self.db_client.get_collection(
-                name=self.config.db.collection_name
-            )
-        except InvalidCollectionException:
-            LOG.debug(f"Collection {self.config.db.collection_name} not found, creating new collection")
-            self.collection = self.db_client.create_collection(
-                name=self.config.db.collection_name,
-                metadata={"hnsw:space": "cosine"}
-            )
-
     async def summarize_chunk(self, chunk: CodeChunk) -> str:
         """Summarize a single code chunk using the LLM"""
         prompt = f"""
@@ -87,7 +79,7 @@ Provide a clean, concise and focused summary. Don't include unnecessary nor gene
         return format_code_summary(chunk.content, result.data)
     
     async def process_and_store_chunk(self, chunk: CodeChunk):
-        """Process a chunk and store it in ChromaDB"""
+        """Process a chunk and store it in vector store"""
         summary = await self.summarize_chunk(chunk)
         
         # Create metadata using Pydantic model
@@ -96,8 +88,7 @@ Provide a clean, concise and focused summary. Don't include unnecessary nor gene
         # Get embedding for the summary
         embedding = generate_embedding(summary, self.config.embedding)
         
-        # Store in ChromaDB
-        self.collection.add(
+        await self.vector_store.add_documents(
             documents=[summary],
             embeddings=embedding,
             metadatas=[metadata.model_dump()],
@@ -111,5 +102,10 @@ Provide a clean, concise and focused summary. Don't include unnecessary nor gene
             task = progress.add_task("Summarizing chunks into vector database...", total=len(chunks))
             
             for chunk in chunks:
-                await self.process_and_store_chunk(chunk)
-                progress.advance(task)
+                try:
+                    await self.process_and_store_chunk(chunk)
+                    progress.advance(task)
+                except Exception as e:
+                    LOG.error(f"Error processing chunk {chunk.location}: {e}")
+                    # Continue processing other chunks even if one fails
+                    continue

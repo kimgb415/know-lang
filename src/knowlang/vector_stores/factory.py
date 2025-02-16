@@ -16,7 +16,7 @@ class VectorStoreFactory:
     """Factory for creating vector store instances"""
     
     @staticmethod
-    async def get(
+    def get(
         config: DBConfig
     ) -> VectorStore:
         """
@@ -46,7 +46,7 @@ class VectorStoreFactory:
                 raise VectorStoreNotFoundError(f"Provider {config.db_provider} not supported")
             
             # Initialize the store
-            await vector_store.initialize()
+            vector_store.initialize()
             
             return vector_store
             

@@ -3,9 +3,17 @@ import tempfile
 from unittest.mock import Mock, patch, AsyncMock
 from pathlib import Path
 from knowlang.summarizer.summarizer import CodeSummarizer
-from knowlang.core.types import CodeChunk, BaseChunkType, CodeLocation, LanguageEnum
+from knowlang.core.types import (
+    CodeChunk, 
+    BaseChunkType, 
+    CodeLocation, 
+    LanguageEnum
+)
 from knowlang.configs.config import AppConfig
 from knowlang.utils.chunking_util import format_code_summary
+from knowlang.vector_stores.mock import MockVectorStore
+from knowlang.vector_stores.base import VectorStoreError
+from knowlang.core.types import VectorStoreProvider
 
 @pytest.fixture
 def config():
@@ -17,7 +25,7 @@ def config():
         )
 
 @pytest.fixture
-def sample_chunks(config: AppConfig):
+def sample_chunks():
     """Create sample code chunks for testing"""
     return [
         CodeChunk(
@@ -47,6 +55,12 @@ def sample_chunks(config: AppConfig):
     ]
 
 @pytest.fixture
+def mock_vector_store():
+    """Create a mock vector store"""
+    store = MockVectorStore()
+    return store
+
+@pytest.fixture
 def mock_summary():
     """Create a sample summary result"""
     return "This is a test function"
@@ -58,15 +72,29 @@ def mock_run_result(mock_summary):
     mock_result.data = mock_summary
     return mock_result
 
+@pytest.fixture
+@patch('knowlang.summarizer.summarizer.VectorStoreFactory')
+def summarizer(mock_vector_store_factory, config: AppConfig, mock_vector_store: MockVectorStore):
+    """Create a mock summarizer instance"""
+    mock_vector_store_factory.get.return_value = mock_vector_store
+    return CodeSummarizer(config)
+
 @pytest.mark.asyncio
 @patch('knowlang.summarizer.summarizer.Agent')
-async def test_summarize_chunk(mock_agent_class, config: AppConfig, sample_chunks: list[CodeChunk], mock_run_result: Mock):
+async def test_summarize_chunk(
+    mock_agent_class, 
+    config: AppConfig, 
+    sample_chunks: list[CodeChunk], 
+    mock_run_result: Mock,
+    mock_vector_store: MockVectorStore,
+    summarizer: CodeSummarizer
+):
     """Test summarizing a single chunk"""
     # Setup the mock agent instance
     mock_agent = mock_agent_class.return_value
     mock_agent.run = AsyncMock(return_value=mock_run_result)
 
-    summarizer = CodeSummarizer(config)
+    summarizer.agent = mock_agent
     result = await summarizer.summarize_chunk(sample_chunks[0])
     
     # Verify result
@@ -78,28 +106,17 @@ async def test_summarize_chunk(mock_agent_class, config: AppConfig, sample_chunk
     assert "def hello()" in call_args
     assert "Says hello" in call_args
 
-@patch('knowlang.summarizer.summarizer.Agent')
-def test_chromadb_initialization(mock_agent_class, config: AppConfig):
-    """Test ChromaDB initialization"""
-    mock_agent = mock_agent_class.return_value
-    
-    summarizer = CodeSummarizer(config)
-    assert summarizer.collection is not None
-    
-    # Verify we can create a new collection
-    summarizer.db_client.delete_collection(config.db.collection_name)
-    new_summarizer = CodeSummarizer(config)
-    assert new_summarizer.collection is not None
-
 @pytest.mark.asyncio
 @patch('knowlang.summarizer.summarizer.generate_embedding')
 @patch('knowlang.summarizer.summarizer.Agent')
-async def test_process_and_store_chunk_with_embedding(
-    mock_agent_class, 
-    mock_embedding_generator, 
-    config: AppConfig, 
-    sample_chunks: list[CodeChunk], 
-    mock_run_result: Mock
+async def test_process_and_store_chunk(
+    mock_agent_class,
+    mock_embedding_generator,
+    config: AppConfig,
+    sample_chunks: list[CodeChunk],
+    mock_run_result: Mock,
+    mock_vector_store: MockVectorStore,
+    summarizer: CodeSummarizer
 ):
     """Test processing and storing a chunk with embedding"""
     # Setup the mock agent instance
@@ -107,40 +124,71 @@ async def test_process_and_store_chunk_with_embedding(
     mock_agent.run = AsyncMock(return_value=mock_run_result)
     
     # Setup mock embedding response
-    mock_embedding = [0.1, 0.2, 0.3]  # Sample embedding vector
+    mock_embedding = [[0.1, 0.2, 0.3]]  # Sample embedding vector
     mock_embedding_generator.return_value = mock_embedding
     
-    summarizer = CodeSummarizer(config)
-    
-    # Mock the collection's add method
-    summarizer.collection.add = Mock()
-    
-    # Process the chunk
+    summarizer.agent = mock_agent
     await summarizer.process_and_store_chunk(sample_chunks[0])
 
-    code_summary = format_code_summary(sample_chunks[0].content, mock_run_result.data)
+    # Verify the document was added to the store
+    assert len(mock_vector_store.documents) == 1
+    doc_id = sample_chunks[0].location.to_single_line()
+    stored_doc = mock_vector_store.documents[doc_id]
     
-    # Verify ollama.embed was called with correct parameters
-    mock_embedding_generator.assert_called_once_with(
-        code_summary,
-        config.embedding,
-    )
-    
-    # Verify collection.add was called with correct parameters
-    add_call = summarizer.collection.add.call_args
-    assert add_call is not None
-    
-    kwargs = add_call[1]
-    assert len(kwargs['embeddings']) == 3
-    assert kwargs['embeddings'] == mock_embedding
-    assert kwargs['documents'][0] == code_summary
-    assert kwargs['ids'][0] == sample_chunks[0].location.to_single_line()
+    # Verify document content
+    expected_summary = format_code_summary(sample_chunks[0].content, mock_run_result.data)
+    assert stored_doc == expected_summary
     
     # Verify metadata
-    metadata = kwargs['metadatas'][0]
-    assert metadata['file_path'].startswith(str(config.db.persist_directory)) == False
+    metadata = mock_vector_store.metadata[doc_id]
     assert metadata['file_path'] == sample_chunks[0].location.file_path
     assert metadata['start_line'] == sample_chunks[0].location.start_line
     assert metadata['end_line'] == sample_chunks[0].location.end_line
     assert metadata['type'] == sample_chunks[0].type.value
     assert metadata['name'] == sample_chunks[0].name
+
+    # Verify embedding
+    assert mock_vector_store.embeddings[doc_id] == mock_embedding[0]
+
+@pytest.mark.asyncio
+@patch('knowlang.summarizer.summarizer.generate_embedding')
+@patch('knowlang.summarizer.summarizer.Agent')
+async def test_process_chunks_error_handling(
+    mock_agent_class,
+    mock_embedding_generator,
+    config: AppConfig,
+    sample_chunks: list[CodeChunk],
+    mock_vector_store: MockVectorStore,
+    mock_run_result: Mock,
+    summarizer: CodeSummarizer
+):
+    """Test error handling during chunk processing"""
+    mock_agent = mock_agent_class.return_value
+    mock_agent.run = AsyncMock(return_value=mock_run_result)
+    summarizer.agent = mock_agent
+
+    # Setup mock embedding response
+    mock_embedding = [[0.1, 0.2, 0.3]]  # Sample embedding vector
+    mock_embedding_generator.return_value = mock_embedding
+
+    # Setup mock to fail on the first chunk
+    mock_vector_store.add_error = VectorStoreError("Test error")
+    
+    # Process should continue despite errors
+    await summarizer.process_chunks(sample_chunks)
+    
+    # Reset mock store for second test
+    mock_vector_store.reset()
+    mock_vector_store.add_error = None
+    
+    # Test partial success
+    mock_agent = mock_agent_class.return_value
+    mock_agent.run = AsyncMock(side_effect=[
+        Exception("First chunk fails"),
+        Mock(data="Second chunk works")
+    ])
+    
+    await summarizer.process_chunks(sample_chunks)
+    
+    # Should have processed the second chunk successfully
+    assert len(mock_vector_store.documents) == 1

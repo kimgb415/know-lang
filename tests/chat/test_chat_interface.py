@@ -1,4 +1,3 @@
-# test_chat_interface.py
 import pytest
 from unittest.mock import Mock, patch
 from gradio import ChatMessage
@@ -22,13 +21,13 @@ def mock_request():
     return request
 
 @pytest.fixture
-def interface(mock_config):
+@patch('knowlang.chat_bot.chat_interface.VectorStoreFactory')
+def interface(mock_vector_store_factory, mock_config, mock_vector_store):
     """Create test interface instance with mocked dependencies"""
-    with patch('chromadb.PersistentClient') as mock_client:
-        mock_collection = Mock()
-        mock_client.return_value.get_collection.return_value = mock_collection
-        interface = CodeQAChatInterface(mock_config)
-        return interface
+    mock_vector_store_factory.get.return_value = mock_vector_store
+    interface = CodeQAChatInterface(mock_config)
+    
+    return interface
 
 @pytest.mark.asyncio
 @patch('knowlang.chat_bot.chat_interface.stream_chat_progress')

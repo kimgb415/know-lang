@@ -21,7 +21,7 @@ class ChromaVectorStore(VectorStore):
         self.client = None
         self.collection = None
         
-    async def initialize(self) -> None:
+    def initialize(self) -> None:
         """Initialize ChromaDB client and collection"""
         try:
             self.client = chromadb.PersistentClient(

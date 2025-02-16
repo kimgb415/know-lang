@@ -1,5 +1,5 @@
 from typing import Literal, Optional, Dict, Any, List
-from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic_settings import BaseSettings
 from pydantic import Field, field_validator, ValidationInfo
 from pathlib import Path
 import fnmatch
@@ -137,12 +137,12 @@ class DBConfig(BaseSettings):
         description="Vector Database provider"
     )
     persist_directory: Path = Field(
-        default=Path("./chromadb"),
-        description="Directory to store ChromaDB files"
+        default=Path("./vector_store"),
+        description="Directory to vector store"
     )
     collection_name: str = Field(
         default="code",
-        description="Name of the ChromaDB collection"
+        description="Name of the vector store collection"
     )
     codebase_directory: Path = Field(
         default=Path("./"),
