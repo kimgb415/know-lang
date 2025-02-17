@@ -137,7 +137,7 @@ class DBConfig(BaseSettings):
         description="Vector Database provider"
     )
     persist_directory: Path = Field(
-        default=Path("./vector_store"),
+        default=Path("./vectordb"),
         description="Directory to vector store"
     )
     collection_name: str = Field(
