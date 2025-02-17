@@ -173,14 +173,15 @@ class CodeQAChatInterface:
                 submit = gr.Button("Submit", scale=1)
                 clear = gr.ClearButton([msg, chatbot], scale=1)
 
-            async def respond(message: str, history: List[ChatMessage], request: gr.Request) -> AsyncGenerator[List[ChatMessage], None]:
+            async def respond(message: str, history: List[ChatMessage], request: gr.Request) -> AsyncGenerator[tuple[List[ChatMessage],str], None]:
                 self.chat_analytics.track_query(message, request.request.client.host)
                 async for updated_history in self.stream_response(message, history, request):
-                    yield updated_history
+                    # clear user input after processing
+                    yield updated_history, ""
                         
             # Set up event handlers
-            msg.submit(respond, [msg, chatbot], [chatbot])
-            submit.click(respond, [msg, chatbot], [chatbot])
+            msg.submit(respond, [msg, chatbot], [chatbot, msg])
+            submit.click(respond, [msg, chatbot], [chatbot, msg])
             chatbot.like(self._handle_feedback, [chatbot])
 
         return interface
