@@ -6,7 +6,7 @@ from typing import List, Optional, Set, Dict
 from pydantic import BaseModel
 
 
-class StateChangeType(Enum(str)):
+class StateChangeType(str, Enum):
     """Types of changes in files"""
     ADDED = 'added'
     MODIFIED = 'modified'
