@@ -6,4 +6,4 @@ __pycache__
 evaluations/
 dist
 chromadb
-vector_store/
+vectordb/
