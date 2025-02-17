@@ -88,3 +88,11 @@ class VectorStoreProvider(str, Enum):
     """Supported vector store providers"""
     CHROMA = "chroma"
     TESTING = "testing"
+
+class StateStoreProvider(str, Enum):
+    """Supported state store types"""
+    SQLITE = "sqlite"
+    # add more types in future:
+    # POSTGRES = "postgres"
+    # MYSQL = "mysql"
+    # MONGODB = "mongodb"
