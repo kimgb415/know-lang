@@ -225,7 +225,7 @@ If you use KnowLang in your research, please cite:
   title = {KnowLang: Comprehensive Understanding for Complex Codebase},
   year = {2025},
   publisher = {GitHub},
-  url = {https://github.com/kimgb415/know-lang}
+  url = {https://github.com/KnowLangOrg/know-lang}
 }
 ```
 
