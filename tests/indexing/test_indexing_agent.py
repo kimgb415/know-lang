@@ -2,7 +2,7 @@ import pytest
 import tempfile
 from unittest.mock import Mock, patch, AsyncMock
 from pathlib import Path
-from knowlang.summarizer.summarizer import CodeSummarizer
+from knowlang.indexing.indexing_agent import IndexingAgent
 from knowlang.core.types import (
     CodeChunk, 
     BaseChunkType, 
@@ -13,7 +13,6 @@ from knowlang.configs.config import AppConfig
 from knowlang.utils.chunking_util import format_code_summary
 from knowlang.vector_stores.mock import MockVectorStore
 from knowlang.vector_stores.base import VectorStoreError
-from knowlang.core.types import VectorStoreProvider
 
 @pytest.fixture
 def config():
@@ -73,29 +72,29 @@ def mock_run_result(mock_summary):
     return mock_result
 
 @pytest.fixture
-@patch('knowlang.summarizer.summarizer.VectorStoreFactory')
-def summarizer(mock_vector_store_factory, config: AppConfig, mock_vector_store: MockVectorStore):
-    """Create a mock summarizer instance"""
+@patch('knowlang.indexing.indexing_agent.VectorStoreFactory')
+def indexing_agent(mock_vector_store_factory, config: AppConfig, mock_vector_store: MockVectorStore):
+    """Create a mock indexing_agent instance"""
     mock_vector_store_factory.get.return_value = mock_vector_store
-    return CodeSummarizer(config)
+    return IndexingAgent(config)
 
 @pytest.mark.asyncio
-@patch('knowlang.summarizer.summarizer.Agent')
+@patch('knowlang.indexing.indexing_agent.Agent')
 async def test_summarize_chunk(
     mock_agent_class, 
     config: AppConfig, 
     sample_chunks: list[CodeChunk], 
     mock_run_result: Mock,
     mock_vector_store: MockVectorStore,
-    summarizer: CodeSummarizer
+    indexing_agent: IndexingAgent
 ):
     """Test summarizing a single chunk"""
     # Setup the mock agent instance
     mock_agent = mock_agent_class.return_value
     mock_agent.run = AsyncMock(return_value=mock_run_result)
 
-    summarizer.agent = mock_agent
-    result = await summarizer.summarize_chunk(sample_chunks[0])
+    indexing_agent.agent = mock_agent
+    result = await indexing_agent.summarize_chunk(sample_chunks[0])
     
     # Verify result
     assert isinstance(result, str)
@@ -107,8 +106,8 @@ async def test_summarize_chunk(
     assert "Says hello" in call_args
 
 @pytest.mark.asyncio
-@patch('knowlang.summarizer.summarizer.generate_embedding')
-@patch('knowlang.summarizer.summarizer.Agent')
+@patch('knowlang.indexing.indexing_agent.generate_embedding')
+@patch('knowlang.indexing.indexing_agent.Agent')
 async def test_process_and_store_chunk(
     mock_agent_class,
     mock_embedding_generator,
@@ -116,7 +115,7 @@ async def test_process_and_store_chunk(
     sample_chunks: list[CodeChunk],
     mock_run_result: Mock,
     mock_vector_store: MockVectorStore,
-    summarizer: CodeSummarizer
+    indexing_agent: IndexingAgent
 ):
     """Test processing and storing a chunk with embedding"""
     # Setup the mock agent instance
@@ -127,8 +126,8 @@ async def test_process_and_store_chunk(
     mock_embedding = [[0.1, 0.2, 0.3]]  # Sample embedding vector
     mock_embedding_generator.return_value = mock_embedding
     
-    summarizer.agent = mock_agent
-    await summarizer.process_and_store_chunk(sample_chunks[0])
+    indexing_agent.agent = mock_agent
+    await indexing_agent.process_and_store_chunk(sample_chunks[0])
 
     # Verify the document was added to the store
     assert len(mock_vector_store.documents) == 1
@@ -151,8 +150,8 @@ async def test_process_and_store_chunk(
     assert mock_vector_store.embeddings[doc_id] == mock_embedding[0]
 
 @pytest.mark.asyncio
-@patch('knowlang.summarizer.summarizer.generate_embedding')
-@patch('knowlang.summarizer.summarizer.Agent')
+@patch('knowlang.indexing.indexing_agent.generate_embedding')
+@patch('knowlang.indexing.indexing_agent.Agent')
 async def test_process_chunks_error_handling(
     mock_agent_class,
     mock_embedding_generator,
@@ -160,12 +159,12 @@ async def test_process_chunks_error_handling(
     sample_chunks: list[CodeChunk],
     mock_vector_store: MockVectorStore,
     mock_run_result: Mock,
-    summarizer: CodeSummarizer
+    indexing_agent: IndexingAgent
 ):
     """Test error handling during chunk processing"""
     mock_agent = mock_agent_class.return_value
     mock_agent.run = AsyncMock(return_value=mock_run_result)
-    summarizer.agent = mock_agent
+    indexing_agent.agent = mock_agent
 
     # Setup mock embedding response
     mock_embedding = [[0.1, 0.2, 0.3]]  # Sample embedding vector
@@ -175,7 +174,7 @@ async def test_process_chunks_error_handling(
     mock_vector_store.add_error = VectorStoreError("Test error")
     
     # Process should continue despite errors
-    await summarizer.process_chunks(sample_chunks)
+    await indexing_agent.process_chunks(sample_chunks)
     
     # Reset mock store for second test
     mock_vector_store.reset()
@@ -188,7 +187,7 @@ async def test_process_chunks_error_handling(
         Mock(data="Second chunk works")
     ])
     
-    await summarizer.process_chunks(sample_chunks)
+    await indexing_agent.process_chunks(sample_chunks)
     
     # Should have processed the second chunk successfully
     assert len(mock_vector_store.documents) == 1

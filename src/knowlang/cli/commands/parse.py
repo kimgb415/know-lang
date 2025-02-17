@@ -6,7 +6,7 @@ from knowlang.configs.config import AppConfig
 from knowlang.parser.factory import CodeParserFactory
 from knowlang.parser.providers.git import GitProvider
 from knowlang.parser.providers.filesystem import FilesystemProvider
-from knowlang.summarizer.summarizer import CodeSummarizer
+from knowlang.indexing.indexing_agent import IndexingAgent
 from knowlang.cli.display.formatters import get_formatter
 from knowlang.cli.display.progress import ProgressTracker
 from knowlang.utils.fancy_log import FancyLogger
@@ -68,5 +68,5 @@ async def parse_command(args: ParseCommandArgs) -> None:
         LOG.warning("No code chunks found")
     
     # Process summaries
-    summarizer = CodeSummarizer(config)
+    summarizer = IndexingAgent(config)
     await summarizer.process_chunks(total_chunks)

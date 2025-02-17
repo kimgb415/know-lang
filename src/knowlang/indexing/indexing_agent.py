@@ -13,13 +13,13 @@ from knowlang.vector_stores.factory import VectorStoreFactory
 LOG = FancyLogger(__name__)
 
 
-class CodeSummarizer:
+class IndexingAgent:
     def __init__(
         self, 
         config: AppConfig,
     ):
         """
-        Initialize CodeSummarizer with config and optional vector store.
+        Initialize IndexingAgent with config and optional vector store.
         If vector store is not provided, creates one based on config.
         """
         self.config = config

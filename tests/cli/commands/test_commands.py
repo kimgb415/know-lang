@@ -26,12 +26,12 @@ def mock_filesystem_provider():
         yield provider
 
 @pytest.fixture
-def mock_summarizer():
-    with patch('knowlang.cli.commands.parse.CodeSummarizer') as summarizer:
+def mock_indexing_agent():
+    with patch('knowlang.cli.commands.parse.IndexingAgent') as indexing_agent:
         mock_instance = Mock()
         mock_instance.process_chunks = AsyncMock()
-        summarizer.return_value = mock_instance
-        yield summarizer
+        indexing_agent.return_value = mock_instance
+        yield indexing_agent
 
 @pytest.fixture
 def mock_formatter():
@@ -67,7 +67,7 @@ class TestParseCommand:
         mock_parser_factory,
         mock_git_provider,
         mock_filesystem_provider,
-        mock_summarizer,
+        mock_indexing_agent,
         mock_formatter,
         tmp_path
     ):
@@ -102,7 +102,7 @@ class TestParseCommand:
         mock_provider_instance.get_files.assert_called_once()
         mock_parser.parse_file.assert_called_once()
         mock_formatter.return_value.display_chunks.assert_called_once_with(["chunk1", "chunk2"])
-        mock_summarizer.return_value.process_chunks.assert_called_once_with(["chunk1", "chunk2"])
+        mock_indexing_agent.return_value.process_chunks.assert_called_once_with(["chunk1", "chunk2"])
 
     @pytest.mark.asyncio
     async def test_parse_filesystem(
@@ -110,7 +110,7 @@ class TestParseCommand:
         mock_parser_factory,
         mock_git_provider,
         mock_filesystem_provider,
-        mock_summarizer,
+        mock_indexing_agent,
         mock_formatter,
         tmp_path
     ):
