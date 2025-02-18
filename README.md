@@ -53,18 +53,19 @@ flowchart LR
     E --> F[User Interface]
 ```
 
-
 ## Prerequisites
 
 KnowLang uses [Ollama](https://ollama.com) as its default LLM and embedding provider. Before installing KnowLang:
 
 1. Install Ollama:
+
 ```bash
 # check the official download instructions from https://ollama.com/download
 curl -fsSL https://ollama.com/install.sh | sh
 ```
 
 2. Pull required models:
+
 ```bash
 # For LLM responses
 ollama pull llama3.2
@@ -74,6 +75,7 @@ ollama pull mxbai-embed-large
 ```
 
 3. Verify Ollama is running:
+
 ```bash
 ollama list
 ```
@@ -88,29 +90,34 @@ Note: While Ollama is the default choice for easy setup, KnowLang supports other
 
 - **RAM**: Minimum 16GB recommended (Ollama models require significant memory)
 - **Storage**: At least 10GB free space for model files
-- **OS**: 
+- **OS**:
   - Linux (recommended)
   - macOS 12+ (Intel or Apple Silicon)
   - Windows 10+ with WSL2
 - **Python**: 3.10 or higher
 
-
 ### Installation
+
 You can install KnowLang via pip:
+
 ```bash
 pip install knowlang
 ```
+
 Alternatively, you can clone the repository and install it in editable mode:
+
 ```bash
-git clone https://github.com/kimgb415/know-lang.git
+git clone https://github.com/KnowLangOrg/know-lang.git
 cd know-lang
 pip install -e .
 ```
+
 This allows you to make changes to the source code and have them immediately reflected without reinstalling the package.
 
 ### Basic Usage
 
 1. First, parse and index your codebase:
+
 ```bash
 # For a local codebase
 knowlang parse ./my-project
@@ -118,10 +125,12 @@ knowlang parse ./my-project
 # For verbose output
 knowlang -v parse ./my-project
 ```
+
 > ⚠️ **Warning**  
 > Make sure to setup the correct paths to include and exclude for parsing. Please refer to "Parser Settings" section in [Configuration Guide](configuration.md) for more information
 
 2. Then, launch the chat interface:
+
 ```bash
 knowlang chat
 ```
@@ -133,6 +142,7 @@ That's it! The chat interface will open in your browser, ready to answer questio
 ### Advanced Usage
 
 #### Custom Configuration
+
 ```bash
 # Use custom configuration file
 knowlang parse --config my_config.yaml ./my-project
@@ -142,6 +152,7 @@ knowlang parse --output json ./my-project
 ```
 
 #### Chat Interface Options
+
 ```bash
 # Run on a specific port
 knowlang chat --port 7860
@@ -200,7 +211,6 @@ The RAG system uses a multi-stage retrieval process:
 2. Initial vector similarity search
 3. Context aggregation
 4. LLM response generation with full context
-
 
 ## Roadmap
 
