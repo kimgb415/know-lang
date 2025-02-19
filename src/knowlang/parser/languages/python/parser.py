@@ -5,6 +5,7 @@ from tree_sitter import Language, Parser, Node
 
 from knowlang.parser.base.parser import LanguageParser
 from knowlang.core.types import BaseChunkType, CodeChunk, CodeLocation, LanguageEnum
+from knowlang.utils.chunking_util import convert_to_relative_path
 from knowlang.utils.fancy_log import FancyLogger
 
 LOG = FancyLogger(__name__)
@@ -136,7 +137,7 @@ class PythonParser(LanguageParser):
                 return []
 
             chunks: List[CodeChunk] = []
-            relative_path = file_path.relative_to(self.config.db.codebase_directory).as_posix()
+            relative_path = convert_to_relative_path(file_path, self.config.db)
             
             # Process the syntax tree
             for node in tree.root_node.children:

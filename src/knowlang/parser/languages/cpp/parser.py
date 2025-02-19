@@ -6,6 +6,7 @@ from tree_sitter import Language, Parser, Node
 
 from knowlang.parser.base.parser import LanguageParser
 from knowlang.core.types import CodeChunk, BaseChunkType, CodeLocation, CodeMetadata, LanguageEnum
+from knowlang.utils.chunking_util import convert_to_relative_path
 from knowlang.utils.fancy_log import FancyLogger
 
 LOG = FancyLogger(__name__)
@@ -145,7 +146,7 @@ class CppParser(LanguageParser):
             tree = self.parser.parse(source_code)
             chunks: List[CodeChunk] = []
 
-            relative_path = file_path.relative_to(self.config.db.codebase_directory).as_posix()
+            relative_path = convert_to_relative_path(file_path, self.config.db)
             
             def traverse_node(node: Node):
                 """Recursively traverse the syntax tree"""

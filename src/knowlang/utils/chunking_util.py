@@ -1,6 +1,11 @@
+from knowlang.configs.config import DBConfig
+from pathlib import Path
 
 MAX_CHARS_PER_CHUNK = 10000  # Approximate 8k tokens limit (very rough estimate)
 
+
+def convert_to_relative_path(path: Path, db_config: DBConfig) -> str:
+    return str(path.relative_to(db_config.codebase_directory).as_posix())
 
 def format_code_summary(code: str, summary: str) -> str:
     """Format code and summary into a single string"""
