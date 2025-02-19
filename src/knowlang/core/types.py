@@ -1,8 +1,10 @@
 # src/knowlang/core/types.py
 from enum import Enum
 from pathlib import Path
+from typing import Any, Dict, Optional
+
 from pydantic import BaseModel, Field
-from typing import Optional, Dict, Any
+
 
 class LanguageEnum(str, Enum):
     """Supported programming languages"""
@@ -92,7 +94,7 @@ class VectorStoreProvider(str, Enum):
 class StateStoreProvider(str, Enum):
     """Supported state store types"""
     SQLITE = "sqlite"
+    POSTGRES = "postgres"
     # add more types in future:
-    # POSTGRES = "postgres"
     # MYSQL = "mysql"
     # MONGODB = "mongodb"

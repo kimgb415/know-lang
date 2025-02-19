@@ -1,6 +1,7 @@
 from enum import Enum
 from pathlib import Path
-from typing import Optional, Dict, Any
+from typing import Any, Dict, Optional
+
 from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings
 
@@ -19,7 +20,7 @@ class StateStoreConfig(BaseSettings):
     )
     connection_url: Optional[str] = Field(
         default=None,
-        description="Database connection URL (for network-based stores)"
+        description="Database connection URL (for network-based stores like PostgreSQL)"
     )
     pool_size: int = Field(
         default=5,
@@ -55,15 +56,26 @@ class StateStoreConfig(BaseSettings):
 
     def get_connection_args(self) -> Dict[str, Any]:
         """Get connection arguments based on store type"""
+        common_args = {
+            'pool_size': self.pool_size,
+            'max_overflow': self.max_overflow,
+            'pool_timeout': self.pool_timeout,
+            'pool_recycle': self.pool_recycle,
+            'echo': self.echo,
+            **self.extra_config,
+        }
+        
         if self.type == StateStoreProvider.SQLITE:
             return {
                 'url': f'sqlite:///{self.store_path}',
-                'pool_size': self.pool_size,
-                'max_overflow': self.max_overflow,
-                'pool_timeout': self.pool_timeout,
-                'pool_recycle': self.pool_recycle,
-                'echo': self.echo,
-                **self.extra_config
+                **common_args,
+            }
+        elif self.type == StateStoreProvider.POSTGRES:
+            if not self.connection_url:
+                raise ValueError("For PostgreSQL, the 'connection_url' must be provided.")
+            return {
+                'url': self.connection_url,
+                **common_args,
             }
         else:
             raise ValueError(f"Unsupported state store type: {self.type}")
