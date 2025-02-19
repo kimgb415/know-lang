@@ -113,9 +113,7 @@ class IncrementalUpdater:
         """High-level method to update entire codebase incrementally"""
         try:
             # Get current files using codebase manager
-            current_files = await self.codebase_manager.get_current_files(
-                self.db_config.codebase_directory
-            )
+            current_files = await self.codebase_manager.get_current_files()
             
             # Detect changes using state manager
             changes = await self.state_manager.state_store.detect_changes(current_files)

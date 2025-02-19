@@ -16,21 +16,21 @@ class CodebaseManager:
     def __init__(self, config: AppConfig):
         self.config = config
         
-    async def get_current_files(self, root_dir: Path) -> Set[Path]:
+    async def get_current_files(self) -> Set[Path]:
         """Get set of current files in directory with proper filtering"""
         current_files = set()
         
         try:
-            for path in root_dir.rglob('*'):
+            for path in self.config.db.codebase_directory.rglob('*'):
                 if path.is_file():
-                    relative_path = convert_to_relative_path(path, root_dir)
+                    relative_path = convert_to_relative_path(path, self.config.db)
                     if self.config.parser.path_patterns.should_process_path(relative_path):
                         current_files.add(path)
             
             return current_files
             
         except Exception as e:
-            LOG.error(f"Error scanning directory {root_dir}: {e}")
+            LOG.error(f"Error scanning directory {self.config.db.codebase_directory}: {e}")
             raise
 
     async def compute_file_hash(self, file_path: Path) -> str:
