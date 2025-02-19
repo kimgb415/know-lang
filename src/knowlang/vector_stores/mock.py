@@ -116,6 +116,13 @@ class MockVectorStore(VectorStore):
         self.documents[id] = document
         self.metadata[id] = metadata
         self.embeddings[id] = embedding
+    
+    async def get_all(self):
+        """Return all documents in the store"""
+        return [
+            SearchResult(document=self.documents[doc_id], metadata=self.metadata[doc_id], score=1.0)
+            for doc_id in self.metadata.keys()
+        ]
 
     def reset(self):
         """Reset the mock store to empty state"""

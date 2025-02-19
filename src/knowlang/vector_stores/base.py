@@ -66,3 +66,8 @@ class VectorStore(ABC):
         """Update an existing document"""
         pass
 
+    @abstractmethod
+    async def get_all(self) -> List[SearchResult]:
+        """Get all documents in the store"""
+        pass
+
