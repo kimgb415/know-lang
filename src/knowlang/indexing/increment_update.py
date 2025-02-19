@@ -75,8 +75,9 @@ class IncrementalUpdater:
                 
                 # Handle additions and modifications
                 if change.change_type in (StateChangeType.ADDED, StateChangeType.MODIFIED):
-                    if change.path in chunks_by_file:
-                        file_chunks = chunks_by_file[change.path]
+                    change_path_str = str(change.path)
+                    if change_path_str in chunks_by_file:
+                        file_chunks = chunks_by_file[change_path_str]
                         chunk_ids = await self.chunk_indexer.process_file_chunks(
                             change.path, 
                             file_chunks
