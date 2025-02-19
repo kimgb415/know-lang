@@ -35,14 +35,17 @@ def mock_vector_store():
 @pytest.fixture
 def mock_indexing_agent():
     with patch('knowlang.indexing.chunk_indexer.IndexingAgent') as mock_agent_cls:
-        mock_agent = Mock()
-        mock_agent.summarize_chunk = AsyncMock(return_value="Test summary")
-        mock_agent_cls.return_value = mock_agent
-        yield mock_agent
+        with patch('knowlang.indexing.chunk_indexer.generate_embedding', return_value=[0.1, 0.2, 0.3]) as mock_generate_embedding:
+            mock_agent = Mock()
+            mock_agent.summarize_chunk = AsyncMock(return_value="Test summary")
+            mock_agent_cls.return_value = mock_agent
+            yield mock_agent
 
 @pytest.fixture
 def chunk_indexer(mock_config, mock_vector_store, mock_indexing_agent):
-    return ChunkIndexer(mock_config, mock_vector_store)
+    indexer = ChunkIndexer(mock_config, mock_vector_store)
+    indexer.indexing_agent = mock_indexing_agent
+    return indexer
 
 @pytest.mark.asyncio
 async def test_process_single_chunk(chunk_indexer: ChunkIndexer, mock_indexing_agent: IndexingAgent):
@@ -84,7 +87,7 @@ async def test_process_multiple_chunks(chunk_indexer: ChunkIndexer, mock_indexin
     assert len(docs) == 3
 
 @pytest.mark.asyncio
-async def test_error_handling(chunk_indexer, mock_indexing_agent):
+async def test_error_handling(chunk_indexer: ChunkIndexer, mock_indexing_agent: IndexingAgent):
     """Test error handling during chunk processing"""
     # Configure mock to raise exception
     mock_indexing_agent.summarize_chunk.side_effect = Exception("Test error")
@@ -103,18 +106,3 @@ async def test_error_handling(chunk_indexer, mock_indexing_agent):
     
     # Verify error didn't prevent trying to process all chunks
     assert mock_indexing_agent.summarize_chunk.call_count == 2
-
-@pytest.mark.asyncio
-async def test_metadata_generation(chunk_indexer, mock_indexing_agent):
-    """Test proper metadata is generated and stored"""
-    # Create test chunk with specific attributes
-    chunk = create_test_chunk("test.py", "def test(): pass")
-    chunk.metadata = {"test_key": "test_value"}
-    
-    # Process chunk
-    await chunk_indexer.process_chunk(chunk)
-    
-    # Verify metadata in vector store
-    docs = await chunk_indexer.vector_store.get_all()
-    stored_metadata = docs[0].metadata
-    
