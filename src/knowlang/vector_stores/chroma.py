@@ -129,3 +129,6 @@ class ChromaVectorStore(VectorStore):
             embeddings=[embedding],
             metadatas=[metadata]
         )
+    
+    async def get_all(self) -> List[SearchResult]:
+        raise NotImplementedError("ChromaDB fetching all documents not implemented yet")
