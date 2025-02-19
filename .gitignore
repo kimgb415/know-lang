@@ -7,4 +7,3 @@ evaluations/
 dist
 chromadb
 vectordb/
-vector_store/

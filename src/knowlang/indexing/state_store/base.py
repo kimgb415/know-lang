@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from abc import ABC, abstractmethod
 from datetime import datetime
 from enum import Enum
@@ -5,11 +7,9 @@ from pathlib import Path
 from typing import Dict, List, Optional, Set
 
 from pydantic import BaseModel
-from sqlalchemy import (Column, DateTime, ForeignKey, Integer, String,
-                        create_engine, select)
+from sqlalchemy import Column, DateTime, ForeignKey, Integer, String, select
 from sqlalchemy.exc import SQLAlchemyError
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import Session, relationship, sessionmaker
+from sqlalchemy.orm import Session, declarative_base, relationship
 
 Base = declarative_base()
 
@@ -66,7 +66,14 @@ class ChunkStateModel(Base):
 
 class StateStore(ABC):
     """Abstract base class for file state storage"""
-    
+
+    @abstractmethod
+    def __init__(self, config: StateStoreConfig):
+        """Initialize database with configuration"""
+        self.config = None
+        self.engine = None
+        self.Session = None # session maker
+
     async def initialize(self) -> None:
         """Initialize database schema"""
         Base.metadata.create_all(self.engine)
@@ -87,20 +94,18 @@ class StateStore(ABC):
     async def get_file_state(self, file_path: Path) -> Optional[FileStateBase]:
         """Get current state of a file"""
         try:
-            with Session(self.engine) as session:
+            with self.Session() as session:
                 stmt = select(FileStateModel).where(
                     FileStateModel.file_path == str(file_path)
                 )
                 result = session.execute(stmt).scalar_one_or_none()
                 
-                if result:
-                    return FileStateBase(
-                        file_path=str(result.file_path),
-                        last_modified=result.last_modified,
-                        file_hash=result.file_hash,
-                        chunk_ids={chunk.chunk_id for chunk in result.chunks}
-                    )
-                return None
+                return (FileStateBase(
+                    file_path=str(result.file_path),
+                    last_modified=result.last_modified,
+                    file_hash=result.file_hash,
+                    chunk_ids={chunk.chunk_id for chunk in result.chunks}
+                ) if result else None)
         except SQLAlchemyError as e:
             LOG.error(f"Database error getting file state for {file_path}: {e}")
             raise
@@ -112,7 +117,7 @@ class StateStore(ABC):
     ) -> None:
         """Update or create file state"""
         try:
-            with Session(self.engine) as session:
+            with self.Session() as session:
                 # Compute new file hash
                 file_hash = self._compute_file_hash(file_path)
                 
@@ -153,7 +158,7 @@ class StateStore(ABC):
     async def delete_file_state(self, file_path: Path) -> Set[str]:
         """Delete file state and return associated chunk IDs"""
         try:
-            with Session(self.engine) as session:
+            with self.Session() as session:
                 file_state = session.execute(
                     select(FileStateModel).where(
                         FileStateModel.file_path == str(file_path)
@@ -175,7 +180,7 @@ class StateStore(ABC):
     async def get_all_file_states(self) -> Dict[Path, FileStateBase]:
         """Get all file states"""
         try:
-            with Session(self.engine) as session:
+            with self.Session() as session:
                 stmt = select(FileStateModel)
                 results = session.execute(stmt).scalars().all()
                 
