@@ -132,3 +132,14 @@ class ChromaVectorStore(VectorStore):
     
     async def get_all(self) -> List[SearchResult]:
         raise NotImplementedError("ChromaDB fetching all documents not implemented yet")
+
+'''
+Action Items:
+- Track local changes through git commits (assuming you have a git repository)
+```bash
+git diff --name-only HEAD~10
+```
+We can run cron job every 10 minutes to check last 10 commits.
+We can further run other git commands to check that those commits occurred in the last 10 minutes.
+- Update vector store if changes are detected
+'''
