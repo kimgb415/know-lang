@@ -1,38 +1,12 @@
-import ollama
-import openai
-import voyageai
-import voyageai.client
-from knowlang.configs.config import EmbeddingConfig, ModelProvider
-from typing import Union, List, overload, Optional
-from enum import Enum
+from typing import List, Optional, Union, overload
 
-# Type definitions
-EmbeddingVector = List[float]
+from knowlang.configs.config import EmbeddingConfig
+from knowlang.models.providers import PROVIDER_REGISTRY
+from knowlang.models.types import EmbeddingInputType, EmbeddingVector
 
 
-class EmbeddingInputType(Enum):
-    DOCUMENT = "document"
-    QUERY = "query"
-
-
-def _process_ollama_batch(inputs: List[str], model_name: str) -> List[EmbeddingVector]:
-    """Helper function to process Ollama embeddings in batch."""
-    return ollama.embed(model=model_name, input=inputs)['embeddings']
-    
-
-def _process_openai_batch(inputs: List[str], model_name: str) -> List[EmbeddingVector]:
-    """Helper function to process OpenAI embeddings in batch."""
-    response = openai.embeddings.create(
-        input=inputs,
-        model=model_name
-    )
-    return [item.embedding for item in response.data]
-
-def _process_voiage_batch(inputs: List[str], model_name: str, input_type:EmbeddingInputType) -> List[EmbeddingVector]:
-    """Helper function to process VoyageAI embeddings in batch."""
-    vo = voyageai.Client()
-    embeddings_obj = vo.embed(model=model_name, texts=inputs, input_type=input_type.value)
-    return embeddings_obj.embeddings
+def to_batch(input: Union[str, List[str]]) -> List[str]:
+    return [input] if isinstance(input, str) else input
 
 @overload
 def generate_embedding(input: str, config: EmbeddingConfig, input_type: Optional[EmbeddingInputType]) -> EmbeddingVector: ...
@@ -62,22 +36,14 @@ def generate_embedding(
     if not input:
         raise ValueError("Input cannot be empty")
 
-    # Convert single string to list for batch processing
-    is_single_input = isinstance(input, str)
-    inputs = [input] if is_single_input else input
+    inputs = to_batch(input)
+    provider_function = PROVIDER_REGISTRY.get(config.model_provider)
+
+    if provider_function is None:
+        raise ValueError(f"Unsupported provider: {config.model_provider}")
 
     try:
-        if config.model_provider == ModelProvider.OLLAMA:
-            embeddings = _process_ollama_batch(inputs, config.model_name)
-        elif config.model_provider == ModelProvider.OPENAI:
-            embeddings = _process_openai_batch(inputs, config.model_name)
-        elif config.model_provider == ModelProvider.VOYAGE:
-            embeddings = _process_voiage_batch(inputs, config.model_name, input_type)
-        else:
-            raise ValueError(f"Unsupported provider: {config.model_provider}")
-
-        # Return single embedding for single input
-        return embeddings[0] if is_single_input else embeddings
-
+        embeddings = provider_function(inputs, config.model_name, input_type)
+        return embeddings[0] if isinstance(input, str) else embeddings
     except Exception as e:
         raise RuntimeError(f"Failed to generate embeddings: {str(e)}") from e
