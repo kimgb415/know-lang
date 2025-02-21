@@ -4,10 +4,12 @@ from typing import AsyncGenerator, Dict, List
 import gradio as gr
 from gradio import ChatMessage
 
-from knowlang.chat_bot import ChatAnalytics, ChatStatus, stream_chat_progress
-from knowlang.configs.config import AppConfig
+from knowlang.configs import AppConfig
 from knowlang.utils import FancyLogger, RateLimiter
 from knowlang.vector_stores import VectorStoreFactory
+
+from .chat_graph import ChatStatus, stream_chat_progress
+from .feedback import ChatAnalytics
 
 LOG = FancyLogger(__name__)
 

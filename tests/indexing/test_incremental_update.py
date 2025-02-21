@@ -1,16 +1,20 @@
-import pytest
-from pathlib import Path
 from datetime import datetime
-from unittest.mock import patch, AsyncMock, MagicMock
+from pathlib import Path
+from unittest.mock import AsyncMock, MagicMock, patch
 
+import pytest
+
+from knowlang.configs import AppConfig, DBConfig
+from knowlang.core.types import (BaseChunkType, CodeChunk, CodeLocation,
+                                 LanguageEnum)
 from knowlang.indexing.chunk_indexer import ChunkIndexer
 from knowlang.indexing.increment_update import IncrementalUpdater, UpdateStats
 from knowlang.indexing.state_manager import StateManager
-from knowlang.indexing.state_store.base import FileState, FileChange, StateChangeType
-from knowlang.core.types import CodeChunk, CodeLocation, BaseChunkType, LanguageEnum
-from knowlang.configs.config import AppConfig, DBConfig
-from tests.indexing.mock_state_store import MockStateStore
+from knowlang.indexing.state_store.base import (FileChange, FileState,
+                                                StateChangeType)
 from knowlang.vector_stores.mock import MockVectorStore
+from tests.indexing.mock_state_store import MockStateStore
+
 
 def create_test_chunk(file_path: str, content: str) -> CodeChunk:
     """Helper to create test chunks"""

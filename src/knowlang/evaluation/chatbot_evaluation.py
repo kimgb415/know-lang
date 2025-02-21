@@ -9,7 +9,7 @@ from pydantic import BaseModel, Field, computed_field
 from pydantic_ai import Agent
 
 from knowlang.chat_bot.chat_graph import ChatResult, process_chat
-from knowlang.configs.config import AppConfig
+from knowlang.configs import AppConfig
 from knowlang.utils import create_pydantic_model, truncate_chunk
 
 

@@ -1,5 +1,6 @@
-from knowlang.configs.config import DBConfig
 from pathlib import Path
+
+from knowlang.configs import DBConfig
 
 MAX_CHARS_PER_CHUNK = 10000  # Approximate 8k tokens limit (very rough estimate)
 

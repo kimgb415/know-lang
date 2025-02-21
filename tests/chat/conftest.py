@@ -1,8 +1,10 @@
 
 import pytest
-from knowlang.configs.config import AppConfig, LLMConfig, RerankerConfig
+
+from knowlang.configs import AppConfig, LLMConfig, RerankerConfig
 from knowlang.core.types import ModelProvider
 from knowlang.vector_stores.mock import MockVectorStore
+
 
 @pytest.fixture
 def mock_config():

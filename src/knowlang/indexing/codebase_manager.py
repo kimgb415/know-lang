@@ -6,7 +6,7 @@ from typing import Set
 
 from git import InvalidGitRepositoryError, Repo
 
-from knowlang.configs.config import AppConfig
+from knowlang.configs import AppConfig
 from knowlang.indexing.file_utils import compute_file_hash, get_relative_path
 from knowlang.indexing.state_store.base import FileState
 from knowlang.utils import FancyLogger, convert_to_relative_path

@@ -1,8 +1,11 @@
+import tempfile
 from pathlib import Path
 from typing import Generator
+
 import pytest
-from knowlang.configs.config import AppConfig, DBConfig, ParserConfig, LanguageConfig
-import tempfile
+
+from knowlang.configs import AppConfig, DBConfig, LanguageConfig, ParserConfig
+
 
 @pytest.fixture
 def test_config() -> Generator[AppConfig, None, None]:

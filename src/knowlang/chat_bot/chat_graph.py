@@ -14,7 +14,7 @@ from pydantic_graph import (BaseNode, End, EndStep, Graph, GraphRunContext,
 from rich.console import Console
 from voyageai.object.reranking import RerankingObject
 
-from knowlang.configs.config import AppConfig, EmbeddingConfig, RerankerConfig
+from knowlang.configs import AppConfig, EmbeddingConfig, RerankerConfig
 from knowlang.models import EmbeddingInputType, generate_embedding
 from knowlang.utils import FancyLogger, create_pydantic_model, truncate_chunk
 from knowlang.vector_stores import SearchResult, VectorStore

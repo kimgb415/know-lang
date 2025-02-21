@@ -1,7 +1,7 @@
 from pathlib import Path
 from typing import List, Set
 
-from knowlang.configs.config import AppConfig
+from knowlang.configs import AppConfig
 from knowlang.core.types import CodeChunk, DatabaseChunkMetadata
 from knowlang.indexing.indexing_agent import IndexingAgent
 from knowlang.models import generate_embedding

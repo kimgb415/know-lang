@@ -1,10 +1,13 @@
-from typing import Generator
-import pytest
 import tempfile
-import git
 from pathlib import Path
-from knowlang.configs.config import AppConfig, ParserConfig, LanguageConfig, DBConfig
+from typing import Generator
+
+import git
+import pytest
+
+from knowlang.configs import AppConfig, DBConfig, LanguageConfig, ParserConfig
 from tests.test_data.python_files import TEST_FILES
+
 
 @pytest.fixture
 def test_config() -> Generator[AppConfig, None, None]:

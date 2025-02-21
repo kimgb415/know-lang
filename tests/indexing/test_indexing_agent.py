@@ -4,7 +4,7 @@ from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
 
-from knowlang.configs.config import AppConfig
+from knowlang.configs import AppConfig
 from knowlang.core.types import (BaseChunkType, CodeChunk, CodeLocation,
                                  LanguageEnum)
 from knowlang.indexing.indexing_agent import IndexingAgent

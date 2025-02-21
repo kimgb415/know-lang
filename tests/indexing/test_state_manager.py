@@ -1,13 +1,15 @@
-import pytest
-from pathlib import Path
 from datetime import datetime
+from pathlib import Path
 from unittest.mock import patch
 
+import pytest
+
+from knowlang.configs import AppConfig
 from knowlang.indexing.state_manager import StateManager
 from knowlang.indexing.state_store.base import FileState
 from knowlang.vector_stores.mock import MockVectorStore
-from knowlang.configs.config import AppConfig
 from tests.indexing.mock_state_store import MockStateStore
+
 
 @pytest.fixture
 def mock_state_store():

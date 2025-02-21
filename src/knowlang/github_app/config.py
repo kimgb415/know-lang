@@ -1,7 +1,9 @@
 # github_app/config.py
 from pydantic import Field
 from pydantic_settings import BaseSettings
-from knowlang.configs.base import generate_model_config
+
+from knowlang.configs import generate_model_config
+
 
 class GitHubAppConfig(BaseSettings):
     model_config = generate_model_config(

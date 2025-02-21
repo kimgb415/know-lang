@@ -7,7 +7,7 @@ import pytest
 from knowlang.cli.commands.chat import chat_command, create_config
 from knowlang.cli.commands.parse import parse_command
 from knowlang.cli.types import ChatCommandArgs, ParseCommandArgs
-from knowlang.configs.config import AppConfig
+from knowlang.configs import AppConfig
 from knowlang.core.types import CodeChunk
 from knowlang.indexing.state_store.base import FileChange, StateChangeType
 from knowlang.vector_stores import VectorStoreError

@@ -1,7 +1,7 @@
 from pathlib import Path
 from typing import Optional
 
-from knowlang.configs.config import AppConfig
+from knowlang.configs import AppConfig
 from knowlang.indexing.state_store.base import FileState, StateStore
 from knowlang.utils import FancyLogger
 from knowlang.vector_stores import VectorStoreFactory

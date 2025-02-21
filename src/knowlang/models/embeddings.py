@@ -1,8 +1,9 @@
 from typing import List, Optional, Union, overload
 
-from knowlang.configs.config import EmbeddingConfig
-from knowlang.models import EmbeddingInputType, EmbeddingVector
-from knowlang.models.embedding_providers import EMBEDDING_PROVIDER_REGISTRY
+from knowlang.configs import EmbeddingConfig
+
+from .embedding_providers import EMBEDDING_PROVIDER_REGISTRY
+from .types import EmbeddingInputType, EmbeddingVector
 
 
 def to_batch(input: Union[str, List[str]]) -> List[str]:

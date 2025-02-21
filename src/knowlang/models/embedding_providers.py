@@ -4,8 +4,9 @@ import ollama
 import openai
 import voyageai
 
-from knowlang.configs.config import ModelProvider
-from knowlang.models import EmbeddingInputType, EmbeddingVector
+from knowlang.configs import ModelProvider
+
+from .types import EmbeddingInputType, EmbeddingVector
 
 # Global registry for provider functions
 EMBEDDING_PROVIDER_REGISTRY: Dict[ModelProvider, Callable[[List[str], str, Optional[EmbeddingInputType]], List[EmbeddingVector]]] = {}

@@ -10,7 +10,7 @@ from openai import OpenAI
 from rich.console import Console
 from rich.progress import Progress
 
-from knowlang.configs.config import AppConfig
+from knowlang.configs import AppConfig
 from knowlang.utils import FancyLogger, truncate_chunk
 
 LOG = FancyLogger(__name__)

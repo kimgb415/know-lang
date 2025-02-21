@@ -2,7 +2,7 @@ from enum import Enum
 from pathlib import Path
 from typing import Literal
 
-from knowlang.configs.config import DBConfig
+from knowlang.configs import DBConfig
 from knowlang.core.types import VectorStoreProvider
 from knowlang.vector_stores import (VectorStore, VectorStoreError,
                                     VectorStoreInitError,

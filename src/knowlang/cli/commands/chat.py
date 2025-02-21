@@ -1,7 +1,7 @@
 """Command implementation for the chat interface."""
 from knowlang.chat_bot import create_chatbot
 from knowlang.cli.types import ChatCommandArgs
-from knowlang.configs.config import AppConfig
+from knowlang.configs import AppConfig
 from knowlang.utils import FancyLogger
 from knowlang.vector_stores import VectorStoreError, VectorStoreFactory
 

@@ -5,7 +5,7 @@ from typing import Optional
 from knowlang.cli.display.formatters import get_formatter
 from knowlang.cli.display.progress import ProgressTracker
 from knowlang.cli.types import ParseCommandArgs
-from knowlang.configs.config import AppConfig
+from knowlang.configs import AppConfig
 from knowlang.indexing.codebase_manager import CodebaseManager
 from knowlang.indexing.increment_update import IncrementalUpdater
 from knowlang.indexing.indexing_agent import IndexingAgent

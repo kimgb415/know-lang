@@ -1,12 +1,15 @@
-import pytest
-from unittest.mock import AsyncMock, Mock, patch
 from pathlib import Path
+from unittest.mock import AsyncMock, Mock, patch
 
+import pytest
+
+from knowlang.configs import AppConfig
+from knowlang.core.types import (BaseChunkType, CodeChunk, CodeLocation,
+                                 LanguageEnum)
 from knowlang.indexing.chunk_indexer import ChunkIndexer
-from knowlang.core.types import CodeChunk, CodeLocation, BaseChunkType, LanguageEnum
 from knowlang.indexing.indexing_agent import IndexingAgent
 from knowlang.vector_stores.mock import MockVectorStore
-from knowlang.configs.config import AppConfig
+
 
 def create_test_chunk(file_path: str, content: str, start_line=1, end_line=2) -> CodeChunk:
     """Helper to create test chunks"""

@@ -1,7 +1,7 @@
 import hashlib
 from pathlib import Path
 
-from knowlang.configs.config import DBConfig
+from knowlang.configs import DBConfig
 from knowlang.utils import FancyLogger
 
 LOG = FancyLogger(__name__)

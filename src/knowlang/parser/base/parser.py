@@ -1,9 +1,12 @@
 from abc import ABC, abstractmethod
-from typing import List
 from pathlib import Path
-from knowlang.core.types import CodeChunk, LanguageEnum
-from knowlang.configs.config import AppConfig, LanguageConfig
+from typing import List
+
 from tree_sitter import Language, Parser
+
+from knowlang.configs import AppConfig, LanguageConfig
+from knowlang.core.types import CodeChunk, LanguageEnum
+
 
 class LanguageParser(ABC):
     """Abstract base class for language-specific parsers"""

@@ -12,8 +12,7 @@ from sqlalchemy import (Column, DateTime, ForeignKey, Integer, String,
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import declarative_base, relationship, sessionmaker
 
-from knowlang.configs.config import DBConfig
-from knowlang.configs.state_store_config import StateStoreConfig
+from knowlang.configs import DBConfig
 from knowlang.core.types import StateStoreProvider
 from knowlang.indexing.file_utils import (compute_file_hash, get_absolute_path,
                                           get_relative_path)

@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Dict, List
 
-from knowlang.configs.config import AppConfig
+from knowlang.configs import AppConfig
 from knowlang.core.types import CodeChunk
 from knowlang.indexing.chunk_indexer import ChunkIndexer
 from knowlang.indexing.codebase_manager import CodebaseManager

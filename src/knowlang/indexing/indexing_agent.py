@@ -3,7 +3,7 @@ from typing import List
 from pydantic_ai import Agent
 from rich.progress import Progress
 
-from knowlang.configs.config import AppConfig
+from knowlang.configs import AppConfig
 from knowlang.core.types import CodeChunk, DatabaseChunkMetadata
 from knowlang.models import generate_embedding
 from knowlang.utils import (FancyLogger, create_pydantic_model,

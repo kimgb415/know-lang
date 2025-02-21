@@ -10,7 +10,7 @@ import seaborn as sns
 from pydantic import BaseModel
 
 from knowlang.chat_bot.chat_graph import ChatResult
-from knowlang.configs.config import AppConfig, EmbeddingConfig
+from knowlang.configs import AppConfig, EmbeddingConfig
 from knowlang.evaluation.chatbot_evaluation import (TRANSFORMER_TEST_CASES,
                                                     EvalCase)
 from knowlang.models import (EmbeddingInputType, EmbeddingVector,
