@@ -12,7 +12,7 @@ class StateManager:
     """Manages file states and their associated chunks"""
     
     def __init__(self, config: AppConfig):
-        self.state_store = StateStore(config.state_store)
+        self.state_store = StateStore(config.db)
         self.vector_store = VectorStoreFactory.get(config.db)
 
     async def get_file_state(self, file_path: Path) -> Optional[FileState]:

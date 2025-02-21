@@ -153,6 +153,7 @@ class DBConfig(BaseSettings):
         default='cosine',
         description="Similarity metric for vector search"
     )
+    state_store: StateStoreConfig = Field(default_factory=StateStoreConfig)
 
 class RerankerConfig(BaseSettings):
     enabled: bool = Field(
@@ -200,7 +201,6 @@ class AppConfig(BaseSettings):
     evaluator: EvaluatorConfig = Field(default_factory=EvaluatorConfig)
     reranker: RerankerConfig = Field(default_factory=RerankerConfig)
     db: DBConfig = Field(default_factory=DBConfig)
-    state_store: StateStoreConfig = Field(default_factory=StateStoreConfig)
     parser: ParserConfig = Field(default_factory=ParserConfig)
     chat: ChatConfig = Field(default_factory=ChatConfig)
     embedding: EmbeddingConfig = Field(default_factory=EmbeddingConfig)

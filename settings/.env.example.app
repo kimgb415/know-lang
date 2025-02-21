@@ -3,6 +3,7 @@
 LLM__MODEL_NAME=llama3.2
 LLM__MODEL_PROVIDER=ollama
 LLM__API_KEY=your_api_key
+LLM__MODEL_SETTINGS='{"base_url":"http://127.0.0.1:11434/v1"}'
 
 # Evaluator Configuration
 # Settings for the model evaluation
@@ -24,7 +25,9 @@ RERANKER__RELEVANCE_THRESHOLD=0.5
 # ChromaDB and codebase settings
 DB__PERSIST_DIRECTORY=./chromadb/mycode
 DB__COLLECTION_NAME=code
-DB__CODEBASE_DIRECTORY=./
+DB__CODEBASE_DIRECTORY='.'
+# State Store Configuration
+DB__STATE_STORE__PROVIDER=sqlite
 
 # Parser Configuration
 # Settings for code parsing and file patterns
@@ -35,7 +38,7 @@ PARSER__PATH_PATTERNS='{"include": ["**/*"], "exclude": ["**/venv/**", "**/.git/
 # Settings for the chat interface and context handling
 CHAT__MAX_CONTEXT_CHUNKS=5
 CHAT__SIMILARITY_THRESHOLD=0.7
-CHAT__INTERFACE_TITLE='Code Repository Q&A Assistant'
+CHAT__INTERFACE_TITLE='KnowLang Codebase Assistant'
 CHAT__INTERFACE_DESCRIPTION="Ask questions about the codebase and I'll help you understand it!"
 CHAT__MAX_LENGTH_PER_CHUNK=8000
 

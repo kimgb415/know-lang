@@ -11,8 +11,10 @@ from sqlalchemy import Column, DateTime, ForeignKey, Integer, String, create_eng
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import sessionmaker, declarative_base, relationship
 
+from knowlang.configs.config import DBConfig
 from knowlang.configs.state_store_config import StateStoreConfig
 from knowlang.core.types import StateStoreProvider
+from knowlang.indexing.file_utils import compute_file_hash, get_absolute_path, get_relative_path
 from knowlang.utils.fancy_log import FancyLogger
 
 
@@ -72,16 +74,16 @@ class ChunkStateModel(Base):
 
 class StateStore():
     """SQLAlchemy-based state storage implementation supporting both SQLite and PostgreSQL"""
-    def __init__(self, config: StateStoreConfig):
+    def __init__(self, config: DBConfig):
         """Initialize database with configuration and create schema if needed"""
-        self.config = config
+        self.config = DBConfig.model_validate(config)
         
         # Validate store type
-        if config.provider not in (StateStoreProvider.SQLITE, StateStoreProvider.POSTGRES):
-            raise ValueError(f"Invalid store type: {config.provider}")
+        if config.state_store.provider not in (StateStoreProvider.SQLITE, StateStoreProvider.POSTGRES):
+            raise ValueError(f"Invalid store type: {config.state_store.provider}")
             
         # Initialize database connection
-        connection_args = config.get_connection_args()
+        connection_args = config.state_store.get_connection_args()
         self.engine = create_engine(
             connection_args.pop('url'),
             **connection_args
@@ -91,7 +93,7 @@ class StateStore():
         # Create database schema if it doesn't exist
         Base.metadata.create_all(self.engine)
         
-        LOG.info(f"Initialized {config.provider} state store schema at {self.config.store_path}")
+        LOG.info(f"Initialized {config.state_store.provider} state store schema at {self.config.state_store.store_path}")
 
     def _compute_file_hash(self, file_path: Path) -> str:
         """Compute SHA-256 hash of file contents"""
@@ -109,13 +111,16 @@ class StateStore():
         """Get current state of a file"""
         try:
             with self.Session() as session:
+                # Convert to relative path for storage/lookup
+                relative_path = str(get_relative_path(file_path, self.config))
+                
                 stmt = select(FileStateModel).where(
-                    FileStateModel.file_path == str(file_path)
+                    FileStateModel.file_path == relative_path
                 )
                 result = session.execute(stmt).scalar_one_or_none()
                 
                 return (FileState(
-                    file_path=str(result.file_path),
+                    file_path=result.file_path,
                     last_modified=result.last_modified,
                     file_hash=result.file_hash,
                     chunk_ids={chunk.chunk_id for chunk in result.chunks}
@@ -132,23 +137,29 @@ class StateStore():
         """Update or create file state"""
         try:
             with self.Session() as session:
+                # Ensure we're using relative path for storage
+                relative_path = str(get_relative_path(file_path, self.config))
+                
                 # Compute new file hash
-                file_hash = self._compute_file_hash(file_path)
+                file_hash = compute_file_hash(file_path)
+                current_mtime = datetime.fromtimestamp(file_path.stat().st_mtime)
                 
                 # Get or create file state
                 file_state = session.execute(
                     select(FileStateModel).where(
-                        FileStateModel.file_path == str(file_path)
+                        FileStateModel.file_path == relative_path
                     )
                 ).scalar_one_or_none()
                 
                 if not file_state:
-                    file_state = FileStateModel.from_file(file_path, file_hash)
+                    file_state = FileStateModel.from_file(
+                        relative_path, 
+                        file_hash,
+                        current_mtime
+                    )
                     session.add(file_state)
                 else:
-                    file_state.last_modified = datetime.fromtimestamp(
-                        file_path.stat().st_mtime
-                    )
+                    file_state.last_modified = current_mtime
                     file_state.file_hash = file_hash
                 
                 # Update chunks
@@ -173,9 +184,12 @@ class StateStore():
         """Delete file state and return associated chunk IDs"""
         try:
             with self.Session() as session:
+                # Ensure we're using relative path for storage
+                relative_path = str(get_relative_path(file_path, self.config))
+                
                 file_state = session.execute(
                     select(FileStateModel).where(
-                        FileStateModel.file_path == str(file_path)
+                        FileStateModel.file_path == relative_path
                     )
                 ).scalar_one_or_none()
                 
@@ -199,7 +213,8 @@ class StateStore():
                 results = session.execute(stmt).scalars().all()
                 
                 return {
-                    Path(state.file_path): FileState(
+                    # Convert stored relative paths to absolute paths for comparisons
+                    get_absolute_path(Path(state.file_path), self.config): FileState(
                         file_path=state.file_path,
                         last_modified=state.last_modified,
                         file_hash=state.file_hash,
@@ -223,7 +238,7 @@ class StateStore():
                 if not file_path.exists():
                     continue
                     
-                current_hash = self._compute_file_hash(file_path)
+                current_hash = compute_file_hash(file_path)
                 current_mtime = datetime.fromtimestamp(file_path.stat().st_mtime)
                 
                 if file_path not in existing_states:

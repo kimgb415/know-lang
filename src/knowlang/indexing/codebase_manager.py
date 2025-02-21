@@ -5,6 +5,7 @@ from typing import Set
 from git import Repo, InvalidGitRepositoryError
 import os
 
+from knowlang.indexing.file_utils import compute_file_hash, get_relative_path
 from knowlang.indexing.state_store.base import FileState
 from knowlang.utils.chunking_util import convert_to_relative_path
 from knowlang.configs.config import AppConfig
@@ -61,19 +62,14 @@ class CodebaseManager:
             LOG.error(f"Error scanning directory {self.config.db.codebase_directory}: {e}")
             raise
 
-    async def compute_file_hash(self, file_path: Path) -> str:
-        """Compute SHA-256 hash of file contents"""
-        sha256_hash = hashlib.sha256()
-        with open(file_path, "rb") as f:
-            for byte_block in iter(lambda: f.read(4096), b""):
-                sha256_hash.update(byte_block)
-        return sha256_hash.hexdigest()
-
     async def create_file_state(self, file_path: Path, chunk_ids: Set[str]) -> FileState:
         """Create a new FileState object for a file"""
+        # Ensure we're using a relative path for storage
+        relative_path = get_relative_path(file_path, self.config.db)
+        
         return FileState(
-            file_path=str(convert_to_relative_path(file_path, self.config.db)),
+            file_path=str(relative_path),
             last_modified=datetime.fromtimestamp(file_path.stat().st_mtime),
-            file_hash=await self.compute_file_hash(file_path),
+            file_hash=compute_file_hash(file_path),
             chunk_ids=chunk_ids
         )
