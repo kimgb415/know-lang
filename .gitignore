@@ -7,3 +7,4 @@ evaluations/
 dist
 chromadb
 vectordb/
+statedb/

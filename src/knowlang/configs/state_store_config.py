@@ -10,12 +10,12 @@ from knowlang.core.types import StateStoreProvider
 
 class StateStoreConfig(BaseSettings):
     """Configuration for state storage"""
-    type: StateStoreProvider = Field(
+    provider: StateStoreProvider = Field(
         default=StateStoreProvider.SQLITE,
-        description="Type of state store to use"
+        description="state store provider to use"
     )
     store_path: Path = Field(
-        default=Path("./file_state.db"),
+        default=Path("./statedb/file_state.db"),
         description="Path to store state data (for file-based stores)"
     )
     connection_url: Optional[str] = Field(
@@ -65,12 +65,12 @@ class StateStoreConfig(BaseSettings):
             **self.extra_config,
         }
         
-        if self.type == StateStoreProvider.SQLITE:
+        if self.provider == StateStoreProvider.SQLITE:
             return {
                 'url': f'sqlite:///{self.store_path}',
                 **common_args,
             }
-        elif self.type == StateStoreProvider.POSTGRES:
+        elif self.provider == StateStoreProvider.POSTGRES:
             if not self.connection_url:
                 raise ValueError("For PostgreSQL, the 'connection_url' must be provided.")
             return {
@@ -78,4 +78,4 @@ class StateStoreConfig(BaseSettings):
                 **common_args,
             }
         else:
-            raise ValueError(f"Unsupported state store type: {self.type}")
+            raise ValueError(f"Unsupported state store type: {self.provider}")

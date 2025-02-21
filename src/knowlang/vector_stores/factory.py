@@ -23,7 +23,6 @@ class VectorStoreFactory:
         Create and initialize a vector store instance
         
         Args:
-            provider: Vector store provider to use
             config: Database configuration
             
         Returns:

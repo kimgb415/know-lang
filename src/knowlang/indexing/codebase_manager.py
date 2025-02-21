@@ -2,6 +2,8 @@ from pathlib import Path
 import hashlib
 from datetime import datetime
 from typing import Set
+from git import Repo, InvalidGitRepositoryError
+import os
 
 from knowlang.indexing.state_store.base import FileState
 from knowlang.utils.chunking_util import convert_to_relative_path
@@ -12,20 +14,47 @@ LOG = FancyLogger(__name__)
 
 class CodebaseManager:
     """Manages file-level operations and state creation"""
-    
+
     def __init__(self, config: AppConfig):
         self.config = config
+        self.repo = self._init_git_repo()
+        
+    def _init_git_repo(self) -> Repo | None:
+        """Initialize git repo if the codebase directory is a git repository"""
+        try:
+            if (self.config.db.codebase_directory / '.git').exists():
+                return Repo(self.config.db.codebase_directory)
+            return None
+        except InvalidGitRepositoryError:
+            return None
         
     async def get_current_files(self) -> Set[Path]:
         """Get set of current files in directory with proper filtering"""
         current_files = set()
         
         try:
-            for path in self.config.db.codebase_directory.rglob('*'):
-                if path.is_file():
+            # Convert to string for os.walk
+            root_dir = str(self.config.db.codebase_directory)
+            
+            for root, dirs, files in os.walk(root_dir):
+                # Skip git-ignored directories early
+                if self.repo:
+                    # Modify dirs in-place to skip ignored directories
+                    dirs[:] = [d for d in dirs if not self.repo.ignored(Path(root) / d)]
+                
+                for file in files:
+                    path = Path(root) / file
                     relative_path = convert_to_relative_path(path, self.config.db)
-                    if self.config.parser.path_patterns.should_process_path(relative_path):
-                        current_files.add(path)
+                    
+                    # Skip if path shouldn't be processed based on patterns
+                    if not self.config.parser.path_patterns.should_process_path(relative_path):
+                        continue
+                        
+                    # Skip if individual file is git-ignored
+                    if self.repo and self.repo.ignored(path):
+                        continue
+                        
+                    current_files.add(path)
             
             return current_files
             

@@ -1,16 +1,22 @@
 from __future__ import annotations
 
-from abc import ABC, abstractmethod
 from datetime import datetime
 from enum import Enum
+import hashlib
 from pathlib import Path
 from typing import Dict, List, Optional, Set
 
 from pydantic import BaseModel
-from sqlalchemy import Column, DateTime, ForeignKey, Integer, String, select
+from sqlalchemy import Column, DateTime, ForeignKey, Integer, String, create_engine, select
 from sqlalchemy.exc import SQLAlchemyError
-from sqlalchemy.orm import Session, declarative_base, relationship
+from sqlalchemy.orm import sessionmaker, declarative_base, relationship
 
+from knowlang.configs.state_store_config import StateStoreConfig
+from knowlang.core.types import StateStoreProvider
+from knowlang.utils.fancy_log import FancyLogger
+
+
+LOG = FancyLogger(__name__)
 Base = declarative_base()
 
 class StateChangeType(str, Enum):
@@ -64,20 +70,28 @@ class ChunkStateModel(Base):
     file_id = Column(Integer, ForeignKey('file_states.id'))
     file = relationship("FileStateModel", back_populates="chunks")
 
-class StateStore(ABC):
-    """Abstract base class for file state storage"""
-
-    @abstractmethod
+class StateStore():
+    """SQLAlchemy-based state storage implementation supporting both SQLite and PostgreSQL"""
     def __init__(self, config: StateStoreConfig):
-        """Initialize database with configuration"""
-        self.config = None
-        self.engine = None
-        self.Session = None # session maker
+        """Initialize database with configuration and create schema if needed"""
+        self.config = config
+        
+        # Validate store type
+        if config.provider not in (StateStoreProvider.SQLITE, StateStoreProvider.POSTGRES):
+            raise ValueError(f"Invalid store type: {config.provider}")
+            
+        # Initialize database connection
+        connection_args = config.get_connection_args()
+        self.engine = create_engine(
+            connection_args.pop('url'),
+            **connection_args
+        )
+        self.Session = sessionmaker(bind=self.engine)
 
-    async def initialize(self) -> None:
-        """Initialize database schema"""
+        # Create database schema if it doesn't exist
         Base.metadata.create_all(self.engine)
-        LOG.info(f"Initialized state store schema at {self.config.store_path}")
+        
+        LOG.info(f"Initialized {config.provider} state store schema at {self.config.store_path}")
 
     def _compute_file_hash(self, file_path: Path) -> str:
         """Compute SHA-256 hash of file contents"""
@@ -91,7 +105,7 @@ class StateStore(ABC):
             LOG.error(f"Error computing hash for {file_path}: {e}")
             raise
 
-    async def get_file_state(self, file_path: Path) -> Optional[FileStateBase]:
+    async def get_file_state(self, file_path: Path) -> Optional[FileState]:
         """Get current state of a file"""
         try:
             with self.Session() as session:
@@ -100,7 +114,7 @@ class StateStore(ABC):
                 )
                 result = session.execute(stmt).scalar_one_or_none()
                 
-                return (FileStateBase(
+                return (FileState(
                     file_path=str(result.file_path),
                     last_modified=result.last_modified,
                     file_hash=result.file_hash,
@@ -177,7 +191,7 @@ class StateStore(ABC):
             LOG.error(f"Database error deleting file state for {file_path}: {e}")
             raise
 
-    async def get_all_file_states(self) -> Dict[Path, FileStateBase]:
+    async def get_all_file_states(self) -> Dict[Path, FileState]:
         """Get all file states"""
         try:
             with self.Session() as session:
@@ -185,7 +199,7 @@ class StateStore(ABC):
                 results = session.execute(stmt).scalars().all()
                 
                 return {
-                    Path(state.file_path): FileStateBase(
+                    Path(state.file_path): FileState(
                         file_path=state.file_path,
                         last_modified=state.last_modified,
                         file_hash=state.file_hash,
