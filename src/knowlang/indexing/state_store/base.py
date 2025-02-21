@@ -54,15 +54,6 @@ class FileStateModel(Base):
         cascade="all, delete-orphan"
     )
 
-    @classmethod
-    def from_file(cls, file_path: Path, file_hash: str) -> FileStateModel:
-        """Create FileStateModel from a file path"""
-        return cls(
-            file_path=str(file_path),
-            last_modified=datetime.fromtimestamp(file_path.stat().st_mtime),
-            file_hash=file_hash
-        )
-
 class ChunkStateModel(Base):
     """SQLAlchemy model for chunk states"""
     __tablename__ = 'chunk_states'
@@ -152,10 +143,10 @@ class StateStore():
                 ).scalar_one_or_none()
                 
                 if not file_state:
-                    file_state = FileStateModel.from_file(
-                        relative_path, 
-                        file_hash,
-                        current_mtime
+                    file_state = FileStateModel(
+                        file_path=relative_path,
+                        last_modified=current_mtime,
+                        file_hash=file_hash
                     )
                     session.add(file_state)
                 else:
