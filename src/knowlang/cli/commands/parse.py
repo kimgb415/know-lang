@@ -6,6 +6,7 @@ from knowlang.configs.config import AppConfig
 from knowlang.indexing.codebase_manager import CodebaseManager
 from knowlang.indexing.increment_update import IncrementalUpdater
 from knowlang.indexing.state_manager import StateManager
+from knowlang.indexing.state_store.base import StateChangeType
 from knowlang.parser.factory import CodeParserFactory
 from knowlang.indexing.indexing_agent import IndexingAgent
 from knowlang.cli.display.formatters import get_formatter
@@ -50,7 +51,11 @@ async def parse_command(args: ParseCommandArgs) -> None:
         file_changes = await state_manager.state_store.detect_changes(codebase_files)
         progress.update(f"detected {len(file_changes)} file changes")
 
-        for changed_file_path in [(config.db.codebase_directory / change.path) for change in file_changes]:
+        for changed_file_path in [
+            (config.db.codebase_directory / change.path) 
+            for change in file_changes
+            if change.change_type != StateChangeType.DELETED
+        ]:
             progress.update(f"parsing code in {changed_file_path}...")
             
             parser = code_parser_factory.get_parser(changed_file_path)
