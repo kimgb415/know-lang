@@ -26,7 +26,7 @@ class StateManager:
         if old_state and old_state.chunk_ids:
             await self.vector_store.delete(list(old_state.chunk_ids))
             
-        await self.state_store.update_file_state(file_path, state)
+        await self.state_store.update_file_state(file_path, state.chunk_ids)
 
     async def delete_file_state(self, file_path: Path) -> None:
         """Delete file state and its chunks"""

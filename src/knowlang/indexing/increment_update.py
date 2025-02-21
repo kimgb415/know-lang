@@ -8,6 +8,7 @@ from knowlang.indexing.state_store.base import FileChange, StateChangeType
 from knowlang.indexing.codebase_manager import CodebaseManager
 from knowlang.indexing.state_manager import StateManager
 from knowlang.indexing.chunk_indexer import ChunkIndexer
+from knowlang.utils.chunking_util import convert_to_relative_path
 from knowlang.vector_stores.factory import VectorStoreFactory
 from knowlang.core.types import CodeChunk
 from knowlang.utils.fancy_log import FancyLogger
@@ -73,7 +74,7 @@ class IncrementalUpdater:
                 
                 # Handle additions and modifications (add new chunks)
                 if change.change_type in (StateChangeType.ADDED, StateChangeType.MODIFIED):
-                    change_path_str = str(change.path)
+                    change_path_str = convert_to_relative_path(change.path, self.app_config.db)
                     if change_path_str in chunks_by_file:
                         file_chunks = chunks_by_file[change_path_str]
                         chunk_ids = await self.chunk_indexer.process_file_chunks(

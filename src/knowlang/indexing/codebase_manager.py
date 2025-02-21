@@ -44,10 +44,9 @@ class CodebaseManager:
                 
                 for file in files:
                     path = Path(root) / file
-                    relative_path = convert_to_relative_path(path, self.config.db)
                     
                     # Skip if path shouldn't be processed based on patterns
-                    if not self.config.parser.path_patterns.should_process_path(relative_path):
+                    if not self.config.parser.path_patterns.should_process_path(path):
                         continue
                         
                     # Skip if individual file is git-ignored
@@ -73,7 +72,7 @@ class CodebaseManager:
     async def create_file_state(self, file_path: Path, chunk_ids: Set[str]) -> FileState:
         """Create a new FileState object for a file"""
         return FileState(
-            file_path=str(file_path),
+            file_path=str(convert_to_relative_path(file_path, self.config.db)),
             last_modified=datetime.fromtimestamp(file_path.stat().st_mtime),
             file_hash=await self.compute_file_hash(file_path),
             chunk_ids=chunk_ids

@@ -73,5 +73,3 @@ async def parse_command(args: ParseCommandArgs) -> None:
         LOG.warning("No code chunks found")
     
     # Process summaries
-    summarizer = IndexingAgent(config)
-    await summarizer.process_chunks(total_chunks)
