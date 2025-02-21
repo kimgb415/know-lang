@@ -1,11 +1,12 @@
 import pytest
 from pathlib import Path
 from datetime import datetime
+from unittest.mock import patch
 
 from knowlang.indexing.state_manager import StateManager
-from knowlang.indexing.state_store.base import FileState, StateStore
-from knowlang.vector_stores.base import VectorStore
+from knowlang.indexing.state_store.base import FileState
 from knowlang.vector_stores.mock import MockVectorStore
+from knowlang.configs.config import AppConfig
 from tests.indexing.mock_state_store import MockStateStore
 
 @pytest.fixture
@@ -17,8 +18,18 @@ def mock_vector_store():
     return MockVectorStore()
 
 @pytest.fixture
-def state_manager(mock_state_store: StateStore, mock_vector_store: MockVectorStore):
-    return StateManager(mock_state_store, mock_vector_store)
+def mock_config():
+    """Create a mock AppConfig that returns our mock stores"""
+    return AppConfig()
+
+@pytest.fixture
+def state_manager(mock_config, mock_state_store, mock_vector_store):
+    """Create StateManager with patched dependencies"""
+    # Patch the state store creation
+    with patch('knowlang.indexing.state_manager.StateStore', return_value=mock_state_store):
+        # Patch the vector store factory
+        with patch('knowlang.indexing.state_manager.VectorStoreFactory.get', return_value=mock_vector_store):
+            yield StateManager(mock_config)
 
 def create_file_state(file_path: str, chunk_ids: set[str]) -> FileState:
     """Helper to create a test FileState"""
@@ -30,21 +41,22 @@ def create_file_state(file_path: str, chunk_ids: set[str]) -> FileState:
     )
 
 @pytest.mark.asyncio
-async def test_get_file_state(state_manager: StateManager, mock_state_store: StateStore):
+async def test_get_file_state(state_manager: StateManager, mock_state_store: MockStateStore):
     """Test retrieving a file state"""
     # Setup
     file_path = Path("test.py")
     test_state = create_file_state(str(file_path), {"chunk1", "chunk2"})
-    await mock_state_store.update_file_state(file_path, test_state)
+    mock_state_store.set_file_state(file_path, test_state)
     
     # Execute
     state = await state_manager.get_file_state(file_path)
     
     # Verify
     assert state == test_state
+    mock_state_store.get_file_state.assert_called_once_with(file_path)
 
 @pytest.mark.asyncio
-async def test_update_file_state_new(state_manager: StateManager):
+async def test_update_file_state_new(state_manager: StateManager, mock_state_store: MockStateStore):
     """Test updating state for a new file"""
     # Setup
     file_path = Path("test.py")
@@ -53,46 +65,51 @@ async def test_update_file_state_new(state_manager: StateManager):
     # Execute
     await state_manager.update_file_state(file_path, new_state)
     
-    # Verify
-    state = await state_manager.get_file_state(file_path)
-    assert state == new_state
+    # Verify state was updated with the right chunks
+    mock_state_store.update_file_state.assert_called_once_with(
+        file_path, 
+        new_state.chunk_ids
+    )
 
 @pytest.mark.asyncio
-async def test_update_file_state_existing(state_manager: StateManager, mock_vector_store: MockVectorStore):
+async def test_update_file_state_existing(state_manager: StateManager, mock_state_store: MockStateStore, mock_vector_store: MockVectorStore):
     """Test updating state for an existing file"""
     # Setup
     file_path = Path("test.py")
     old_state = create_file_state(str(file_path), {"old_chunk1", "old_chunk2"})
     new_state = create_file_state(str(file_path), {"new_chunk1"})
     
-    await state_manager.update_file_state(file_path, old_state)
+    # Add the old state to the mock store
+    mock_state_store.set_file_state(file_path, old_state)
     
     # Execute
     await state_manager.update_file_state(file_path, new_state)
     
-    # Verify
-    state = await state_manager.get_file_state(file_path)
-    assert state == new_state
+    # Verify the vector store delete was called with old chunks
+    mock_vector_store.delete_mock.assert_called_once_with(list(old_state.chunk_ids))
     
-    # Verify old chunks were deleted
-    assert "old_chunk1" not in mock_vector_store.documents
-    assert "old_chunk2" not in mock_vector_store.documents
+    # Verify state store update was called with new chunks
+    mock_state_store.update_file_state.assert_called_once_with(
+        file_path, 
+        new_state.chunk_ids
+    )
 
 @pytest.mark.asyncio
-async def test_delete_file_state(state_manager: StateManager, mock_vector_store: MockVectorStore):
+async def test_delete_file_state(state_manager: StateManager, mock_state_store: MockStateStore, mock_vector_store: MockVectorStore):
     """Test deleting a file state"""
     # Setup
     file_path = Path("test.py")
     test_state = create_file_state(str(file_path), {"chunk1", "chunk2"})
-    await state_manager.update_file_state(file_path, test_state)
+    mock_state_store.set_file_state(file_path, test_state)
+    
+    # Configure the mock to return the chunks when delete is called
+    mock_state_store.delete_file_state.return_value = test_state.chunk_ids
     
     # Execute
     await state_manager.delete_file_state(file_path)
     
-    # Verify state was removed
-    state = await state_manager.get_file_state(file_path)
-    assert state is None
+    # Verify state store delete was called
+    mock_state_store.delete_file_state.assert_called_once_with(file_path)
     
-    # Verify chunks were deleted
-    assert "chunk1" not in mock_vector_store.documents
-    assert "chunk2" not in mock_vector_store.documents
+    # Verify chunks were deleted from vector store
+    mock_vector_store.delete_mock.assert_called_once_with(list(test_state.chunk_ids))

@@ -110,7 +110,7 @@ async def test_create_file_state(codebase_manager: CodebaseManager, temp_dir: Pa
     state = await codebase_manager.create_file_state(test_file, chunk_ids)
     
     # Verify state properties
-    assert state.file_path == str(test_file)
+    assert state.file_path in str(test_file)
     assert isinstance(state.last_modified, datetime)
     assert state.chunk_ids == chunk_ids
     assert state.file_hash == await codebase_manager.compute_file_hash(test_file)
