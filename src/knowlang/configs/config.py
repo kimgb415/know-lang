@@ -4,6 +4,7 @@ from pydantic import Field, field_validator, ValidationInfo
 from pathlib import Path
 import fnmatch
 from knowlang.configs.base import generate_model_config
+from knowlang.configs.state_store_config import StateStoreConfig
 from knowlang.core.types import ModelProvider, VectorStoreProvider
 from knowlang.configs.chat_config import ChatConfig, ChatbotAnalyticsConfig
 import os
@@ -152,6 +153,7 @@ class DBConfig(BaseSettings):
         default='cosine',
         description="Similarity metric for vector search"
     )
+    state_store: StateStoreConfig = Field(default_factory=StateStoreConfig)
 
 class RerankerConfig(BaseSettings):
     enabled: bool = Field(

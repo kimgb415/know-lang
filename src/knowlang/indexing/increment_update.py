@@ -3,11 +3,13 @@ from typing import Dict, List
 from collections import defaultdict
 from dataclasses import dataclass
 
-from knowlang.configs.config import DBConfig
+from knowlang.configs.config import AppConfig, DBConfig
 from knowlang.indexing.state_store.base import FileChange, StateChangeType
 from knowlang.indexing.codebase_manager import CodebaseManager
 from knowlang.indexing.state_manager import StateManager
 from knowlang.indexing.chunk_indexer import ChunkIndexer
+from knowlang.utils.chunking_util import convert_to_relative_path
+from knowlang.vector_stores.factory import VectorStoreFactory
 from knowlang.core.types import CodeChunk
 from knowlang.utils.fancy_log import FancyLogger
 
@@ -38,15 +40,12 @@ class IncrementalUpdater:
     
     def __init__(
         self,
-        codebase_manager: CodebaseManager,
-        state_manager: StateManager,
-        chunk_indexer: ChunkIndexer,
-        db_config: DBConfig,
+        app_config: AppConfig,
     ):
-        self.codebase_manager = codebase_manager
-        self.state_manager = state_manager
-        self.chunk_indexer = chunk_indexer
-        self.db_config = db_config
+        self.app_config = app_config
+        self.codebase_manager = CodebaseManager(app_config)
+        self.state_manager = StateManager(app_config)
+        self.chunk_indexer = ChunkIndexer(app_config)
 
     def _group_chunks_by_file(self, chunks: List[CodeChunk]) -> Dict[Path, List[CodeChunk]]:
         """Group chunks by their source file path"""
@@ -66,16 +65,16 @@ class IncrementalUpdater:
         
         for change in changes:
             try:
-                # Handle deletions and modifications
+                # Handle deletions and modifications (remove old chunks)
                 if change.change_type in (StateChangeType.MODIFIED, StateChangeType.DELETED):
                     old_state = await self.state_manager.get_file_state(change.path)
                     if old_state and old_state.chunk_ids:
                         stats.chunks_deleted += len(old_state.chunk_ids)
                         await self.state_manager.delete_file_state(change.path)
                 
-                # Handle additions and modifications
+                # Handle additions and modifications (add new chunks)
                 if change.change_type in (StateChangeType.ADDED, StateChangeType.MODIFIED):
-                    change_path_str = str(change.path)
+                    change_path_str = convert_to_relative_path(change.path, self.app_config.db)
                     if change_path_str in chunks_by_file:
                         file_chunks = chunks_by_file[change_path_str]
                         chunk_ids = await self.chunk_indexer.process_file_chunks(
@@ -110,26 +109,16 @@ class IncrementalUpdater:
         LOG.info(stats.summary())
         return stats
 
-    async def update_codebase(self, chunks: List[CodeChunk]) -> UpdateStats:
+    async def update_codebase(self, chunks: List[CodeChunk], file_changes: List[FileChange]) -> UpdateStats:
         """High-level method to update entire codebase incrementally"""
         try:
-            # Get current files using codebase manager
-            current_files = await self.codebase_manager.get_current_files()
-            
-            # Detect changes using state manager
-            changes = await self.state_manager.state_store.detect_changes(current_files)
-            
-            if not changes:
+            if not file_changes:
                 LOG.info("No changes detected in codebase")
                 return UpdateStats()
             
-            LOG.info(f"Detected {len(changes)} changed files")
-            
             # Process changes
-            return await self.process_changes(changes, chunks)
+            return await self.process_changes(file_changes, chunks)
             
         except Exception as e:
             LOG.error(f"Error updating codebase: {e}")
-            stats = UpdateStats()
-            stats.errors += 1
-            return stats
+            return UpdateStats(errors=1)

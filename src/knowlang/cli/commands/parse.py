@@ -3,9 +3,11 @@ from pathlib import Path
 from typing import Optional
 
 from knowlang.configs.config import AppConfig
+from knowlang.indexing.codebase_manager import CodebaseManager
+from knowlang.indexing.increment_update import IncrementalUpdater
+from knowlang.indexing.state_manager import StateManager
+from knowlang.indexing.state_store.base import StateChangeType
 from knowlang.parser.factory import CodeParserFactory
-from knowlang.parser.providers.git import GitProvider
-from knowlang.parser.providers.filesystem import FilesystemProvider
 from knowlang.indexing.indexing_agent import IndexingAgent
 from knowlang.cli.display.formatters import get_formatter
 from knowlang.cli.display.progress import ProgressTracker
@@ -32,33 +34,41 @@ async def parse_command(args: ParseCommandArgs) -> None:
     config = create_config(args.config)
     
     # Update codebase directory in config
-    config.db.codebase_directory = str(args.path)
+    config.db.codebase_directory = Path(args.path)
     
-    # Create parser factory
-    factory = CodeParserFactory(config)
-    
-    # Determine provider
-    source_path = args.path
-    if (source_path / '.git').exists():
-        LOG.info(f"Detected Git repository at {source_path}")
-        provider = GitProvider(source_path, config)
-    else:
-        LOG.info(f"Using filesystem provider for {source_path}")
-        provider = FilesystemProvider(source_path, config)
+    # Create parser code_parser_factory
+    code_parser_factory = CodeParserFactory(config)
+    codebase_manager = CodebaseManager(config)
+    state_manager = StateManager(config)
     
     # Process files
     total_chunks = []
-    progress = ProgressTracker("Parsing files...")
+    progress = ProgressTracker("Parsing Codebase...")
     
     with progress.progress():
-        for file_path in provider.get_files():
-            progress.update(f"processing {file_path}...")
+        codebase_files = await codebase_manager.get_current_files()
+        progress.update(f"detected {len(codebase_files)} files in codebase")
+        file_changes = await state_manager.state_store.detect_changes(codebase_files)
+        progress.update(f"detected {len(file_changes)} file changes")
+
+        for changed_file_path in [
+            (config.db.codebase_directory / change.path) 
+            for change in file_changes
+            if change.change_type != StateChangeType.DELETED
+        ]:
+            progress.update(f"parsing code in {changed_file_path}...")
             
-            parser = factory.get_parser(file_path)
+            parser = code_parser_factory.get_parser(changed_file_path)
             if parser:
-                chunks = parser.parse_file(file_path)
+                chunks = parser.parse_file(changed_file_path)
                 total_chunks.extend(chunks)
     
+        updater = IncrementalUpdater(config)
+        await updater.update_codebase(
+            chunks=total_chunks, 
+            file_changes=file_changes
+        )
+
     # Display results
     if total_chunks:
         LOG.info(f"\nFound {len(total_chunks)} code chunks")
@@ -68,5 +78,3 @@ async def parse_command(args: ParseCommandArgs) -> None:
         LOG.warning("No code chunks found")
     
     # Process summaries
-    summarizer = IndexingAgent(config)
-    await summarizer.process_chunks(total_chunks)

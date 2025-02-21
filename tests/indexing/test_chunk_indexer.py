@@ -43,9 +43,11 @@ def mock_indexing_agent():
 
 @pytest.fixture
 def chunk_indexer(mock_config, mock_vector_store, mock_indexing_agent):
-    indexer = ChunkIndexer(mock_config, mock_vector_store)
-    indexer.indexing_agent = mock_indexing_agent
-    return indexer
+    with patch('knowlang.indexing.chunk_indexer.VectorStoreFactory.get', return_value=mock_vector_store):
+        indexer = ChunkIndexer(mock_config)
+        indexer.indexing_agent = mock_indexing_agent
+        
+        yield indexer
 
 @pytest.mark.asyncio
 async def test_process_single_chunk(chunk_indexer: ChunkIndexer, mock_indexing_agent: IndexingAgent):

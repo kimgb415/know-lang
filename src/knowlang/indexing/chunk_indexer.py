@@ -7,15 +7,16 @@ from knowlang.models.embeddings import generate_embedding
 from knowlang.vector_stores.base import VectorStore
 from knowlang.configs.config import AppConfig
 from knowlang.utils.fancy_log import FancyLogger
+from knowlang.vector_stores.factory import VectorStoreFactory
 
 LOG = FancyLogger(__name__)
 
 class ChunkIndexer:
     """Handles processing of code chunks including summary and embedding generation"""
     
-    def __init__(self, config: AppConfig, vector_store: VectorStore):
+    def __init__(self, config: AppConfig):
         self.config = config
-        self.vector_store = vector_store
+        self.vector_store = VectorStoreFactory.get(config.db)
         self.indexing_agent = IndexingAgent(config)
 
     async def process_chunk(self, chunk: CodeChunk) -> str:
