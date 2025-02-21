@@ -1,22 +1,23 @@
 from __future__ import annotations
 
+import hashlib
 from datetime import datetime
 from enum import Enum
-import hashlib
 from pathlib import Path
 from typing import Dict, List, Optional, Set
 
 from pydantic import BaseModel
-from sqlalchemy import Column, DateTime, ForeignKey, Integer, String, create_engine, select
+from sqlalchemy import (Column, DateTime, ForeignKey, Integer, String,
+                        create_engine, select)
 from sqlalchemy.exc import SQLAlchemyError
-from sqlalchemy.orm import sessionmaker, declarative_base, relationship
+from sqlalchemy.orm import declarative_base, relationship, sessionmaker
 
 from knowlang.configs.config import DBConfig
 from knowlang.configs.state_store_config import StateStoreConfig
 from knowlang.core.types import StateStoreProvider
-from knowlang.indexing.file_utils import compute_file_hash, get_absolute_path, get_relative_path
-from knowlang.utils.fancy_log import FancyLogger
-
+from knowlang.indexing.file_utils import (compute_file_hash, get_absolute_path,
+                                          get_relative_path)
+from knowlang.utils import FancyLogger
 
 LOG = FancyLogger(__name__)
 Base = declarative_base()

@@ -6,9 +6,8 @@ from rich.progress import Progress
 from knowlang.configs.config import AppConfig
 from knowlang.core.types import CodeChunk, DatabaseChunkMetadata
 from knowlang.models import generate_embedding
-from knowlang.utils.chunking_util import format_code_summary
-from knowlang.utils.fancy_log import FancyLogger
-from knowlang.utils.model_provider import create_pydantic_model
+from knowlang.utils import (FancyLogger, create_pydantic_model,
+                            format_code_summary)
 from knowlang.vector_stores.factory import VectorStoreFactory
 
 LOG = FancyLogger(__name__)

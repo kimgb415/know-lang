@@ -5,7 +5,7 @@ from knowlang.configs.config import AppConfig
 from knowlang.core.types import CodeChunk, DatabaseChunkMetadata
 from knowlang.indexing.indexing_agent import IndexingAgent
 from knowlang.models import generate_embedding
-from knowlang.utils.fancy_log import FancyLogger
+from knowlang.utils import FancyLogger
 from knowlang.vector_stores.base import VectorStore
 from knowlang.vector_stores.factory import VectorStoreFactory
 

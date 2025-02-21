@@ -1,15 +1,17 @@
-from typing import List
-from enum import Enum
-from pydantic import BaseModel, Field, computed_field
-from pydantic_ai import Agent
-from knowlang.configs.config import AppConfig
-from knowlang.utils.chunking_util import truncate_chunk
-from knowlang.utils.model_provider import create_pydantic_model
-from knowlang.chat_bot.chat_graph import ChatResult, process_chat
 import asyncio
 import datetime
-from pathlib import Path
 import json
+from enum import Enum
+from pathlib import Path
+from typing import List
+
+from pydantic import BaseModel, Field, computed_field
+from pydantic_ai import Agent
+
+from knowlang.chat_bot.chat_graph import ChatResult, process_chat
+from knowlang.configs.config import AppConfig
+from knowlang.utils import create_pydantic_model, truncate_chunk
+
 
 class EvalMetric(str, Enum):
     CHUNK_RELEVANCE = "chunk_relevance"
@@ -385,9 +387,9 @@ class DateTimeEncoder(json.JSONEncoder):
         return super().default(obj)
 
 async def main():
+    import chromadb
     from rich.console import Console
     from rich.pretty import Pretty
-    import chromadb
     console = Console()
     config = AppConfig()
     evaluator = ChatBotEvaluator(config)

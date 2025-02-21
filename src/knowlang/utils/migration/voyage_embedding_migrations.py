@@ -9,7 +9,7 @@ from rich.progress import Progress
 
 from knowlang.configs.config import AppConfig, EmbeddingConfig
 from knowlang.models import EmbeddingInputType, generate_embedding
-from knowlang.utils.fancy_log import FancyLogger
+from knowlang.utils import FancyLogger
 
 LOG = FancyLogger(__name__)
 console = Console()

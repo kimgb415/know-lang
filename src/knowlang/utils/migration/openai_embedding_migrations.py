@@ -1,16 +1,17 @@
 import asyncio
 import json
+from datetime import datetime
 from pathlib import Path
+from typing import Dict, List, Optional
+
 import chromadb
 from chromadb.errors import InvalidCollectionException
-from rich.progress import Progress
-from rich.console import Console
-from typing import List, Dict, Optional
 from openai import OpenAI
-from datetime import datetime
+from rich.console import Console
+from rich.progress import Progress
+
 from knowlang.configs.config import AppConfig
-from knowlang.utils.fancy_log import FancyLogger
-from knowlang.utils.chunking_util import truncate_chunk
+from knowlang.utils import FancyLogger, truncate_chunk
 
 LOG = FancyLogger(__name__)
 console = Console()
