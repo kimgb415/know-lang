@@ -17,7 +17,7 @@ from voyageai.object.reranking import RerankingObject
 from knowlang.configs.config import AppConfig, EmbeddingConfig, RerankerConfig
 from knowlang.models import EmbeddingInputType, generate_embedding
 from knowlang.utils import FancyLogger, create_pydantic_model, truncate_chunk
-from knowlang.vector_stores.base import SearchResult, VectorStore
+from knowlang.vector_stores import SearchResult, VectorStore
 
 LOG = FancyLogger(__name__)
 console = Console()

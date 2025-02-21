@@ -9,7 +9,7 @@ from knowlang.core.types import (BaseChunkType, CodeChunk, CodeLocation,
                                  LanguageEnum)
 from knowlang.indexing.indexing_agent import IndexingAgent
 from knowlang.utils import format_code_summary
-from knowlang.vector_stores.base import VectorStoreError
+from knowlang.vector_stores import VectorStoreError
 from knowlang.vector_stores.mock import MockVectorStore
 
 

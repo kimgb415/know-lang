@@ -2,15 +2,13 @@ from enum import Enum
 from pathlib import Path
 from typing import Literal
 
-from knowlang.core.types import VectorStoreProvider
-from knowlang.vector_stores.base import (
-    VectorStore, 
-    VectorStoreError, 
-    VectorStoreInitError, 
-    VectorStoreNotFoundError
-)
-from knowlang.vector_stores.chroma import ChromaVectorStore 
 from knowlang.configs.config import DBConfig
+from knowlang.core.types import VectorStoreProvider
+from knowlang.vector_stores import (VectorStore, VectorStoreError,
+                                    VectorStoreInitError,
+                                    VectorStoreNotFoundError)
+from knowlang.vector_stores.chroma import ChromaVectorStore
+
 
 class VectorStoreFactory:
     """Factory for creating vector store instances"""

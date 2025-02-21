@@ -4,7 +4,7 @@ from typing import Optional
 from knowlang.configs.config import AppConfig
 from knowlang.indexing.state_store.base import FileState, StateStore
 from knowlang.utils import FancyLogger
-from knowlang.vector_stores.factory import VectorStoreFactory
+from knowlang.vector_stores import VectorStoreFactory
 
 LOG = FancyLogger(__name__)
 

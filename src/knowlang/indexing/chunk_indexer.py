@@ -6,8 +6,7 @@ from knowlang.core.types import CodeChunk, DatabaseChunkMetadata
 from knowlang.indexing.indexing_agent import IndexingAgent
 from knowlang.models import generate_embedding
 from knowlang.utils import FancyLogger
-from knowlang.vector_stores.base import VectorStore
-from knowlang.vector_stores.factory import VectorStoreFactory
+from knowlang.vector_stores import VectorStoreFactory
 
 LOG = FancyLogger(__name__)
 
