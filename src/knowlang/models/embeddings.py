@@ -1,8 +1,8 @@
 from typing import List, Optional, Union, overload
 
 from knowlang.configs.config import EmbeddingConfig
-from knowlang.models.providers import PROVIDER_REGISTRY
-from knowlang.models.types import EmbeddingInputType, EmbeddingVector
+from knowlang.models import EmbeddingInputType, EmbeddingVector
+from knowlang.models.embedding_providers import EMBEDDING_PROVIDER_REGISTRY
 
 
 def to_batch(input: Union[str, List[str]]) -> List[str]:
@@ -37,7 +37,7 @@ def generate_embedding(
         raise ValueError("Input cannot be empty")
 
     inputs = to_batch(input)
-    provider_function = PROVIDER_REGISTRY.get(config.model_provider)
+    provider_function = EMBEDDING_PROVIDER_REGISTRY.get(config.model_provider)
 
     if provider_function is None:
         raise ValueError(f"Unsupported provider: {config.model_provider}")

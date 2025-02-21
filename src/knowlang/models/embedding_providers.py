@@ -5,15 +5,15 @@ import openai
 import voyageai
 
 from knowlang.configs.config import ModelProvider
-from knowlang.models.types import EmbeddingInputType, EmbeddingVector
+from knowlang.models import EmbeddingInputType, EmbeddingVector
 
 # Global registry for provider functions
-PROVIDER_REGISTRY: Dict[ModelProvider, Callable[[List[str], str, Optional[EmbeddingInputType]], List[EmbeddingVector]]] = {}
+EMBEDDING_PROVIDER_REGISTRY: Dict[ModelProvider, Callable[[List[str], str, Optional[EmbeddingInputType]], List[EmbeddingVector]]] = {}
 
 def register_provider(provider: ModelProvider):
     """Decorator to register a provider function."""
     def decorator(func: Callable[[List[str], str, Optional[EmbeddingInputType]], List[EmbeddingVector]]):
-        PROVIDER_REGISTRY[provider] = func
+        EMBEDDING_PROVIDER_REGISTRY[provider] = func
         return func
     return decorator
 

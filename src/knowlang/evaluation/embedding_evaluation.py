@@ -1,16 +1,21 @@
-from pathlib import Path
-import matplotlib.pyplot as plt
-import seaborn as sns
-from typing import List, Dict, Tuple, Optional
-import chromadb
-import numpy as np
-from pydantic import BaseModel
+import json
 from dataclasses import dataclass
+from pathlib import Path
+from typing import Dict, List, Optional, Tuple
+
+import chromadb
+import matplotlib.pyplot as plt
+import numpy as np
+import seaborn as sns
+from pydantic import BaseModel
+
 from knowlang.chat_bot.chat_graph import ChatResult
 from knowlang.configs.config import AppConfig, EmbeddingConfig
-import json
-from knowlang.evaluation.chatbot_evaluation import EvalCase, TRANSFORMER_TEST_CASES
-from knowlang.models.embeddings import EmbeddingInputType, generate_embedding, EmbeddingVector
+from knowlang.evaluation.chatbot_evaluation import (TRANSFORMER_TEST_CASES,
+                                                    EvalCase)
+from knowlang.models import (EmbeddingInputType, EmbeddingVector,
+                             generate_embedding)
+
 
 @dataclass
 class ConfigEvalResult:
