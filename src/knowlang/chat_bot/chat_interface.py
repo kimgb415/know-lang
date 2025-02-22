@@ -6,7 +6,7 @@ from gradio import ChatMessage
 
 from knowlang.configs import AppConfig
 from knowlang.utils import FancyLogger, RateLimiter
-from knowlang.vector_stores import VectorStoreFactory
+from knowlang.vector_stores.factory import VectorStoreFactory
 
 from .chat_graph import ChatStatus, stream_chat_progress
 from .feedback import ChatAnalytics

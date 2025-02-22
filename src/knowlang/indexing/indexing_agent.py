@@ -8,7 +8,7 @@ from knowlang.core.types import CodeChunk, DatabaseChunkMetadata
 from knowlang.models import generate_embedding
 from knowlang.utils import (FancyLogger, create_pydantic_model,
                             format_code_summary)
-from knowlang.vector_stores import VectorStoreFactory
+from knowlang.vector_stores.factory import VectorStoreFactory
 
 LOG = FancyLogger(__name__)
 

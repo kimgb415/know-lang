@@ -1,10 +1,15 @@
+from __future__ import annotations
+
 from dataclasses import dataclass, field
-from typing import Any, Callable, Dict, List, Optional
+from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional
 from unittest.mock import AsyncMock
 
 import numpy as np
 
 from knowlang.vector_stores import SearchResult, VectorStore, VectorStoreError
+
+if TYPE_CHECKING:
+    from knowlang.configs import DBConfig
 
 
 @dataclass
@@ -29,6 +34,11 @@ class MockVectorStore(VectorStore):
     deleted_chunks: List[str] = field(default_factory=list)
     added_documents: List[str] = field(default_factory=list)
     updated_documents: List[str] = field(default_factory=list)
+
+    @classmethod
+    def create_from_config(cls, config: DBConfig) -> "MockVectorStore":
+        """Create a mock store instance from configuration"""
+        return
     
     def __post_init__(self):
         """Set up tracking mocks for call verification"""

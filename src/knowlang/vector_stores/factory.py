@@ -1,13 +1,12 @@
-from enum import Enum
-from pathlib import Path
-from typing import Literal
+from __future__ import annotations
 
-from knowlang.configs import DBConfig
-from knowlang.core.types import VectorStoreProvider
+from typing import TYPE_CHECKING
+
 from knowlang.vector_stores import (VectorStore, VectorStoreError,
-                                    VectorStoreInitError,
-                                    VectorStoreNotFoundError)
-from knowlang.vector_stores.chroma import ChromaVectorStore
+                                    VectorStoreInitError)
+
+if TYPE_CHECKING:
+    from knowlang.configs import DBConfig
 
 
 class VectorStoreFactory:
@@ -27,20 +26,11 @@ class VectorStoreFactory:
             Initialized vector store instance
             
         Raises:
-            VectorStoreNotFoundError: If provider is not supported
             VectorStoreInitError: If initialization fails
         """
         try:
-            vector_store: VectorStore
-            
-            if config.db_provider == VectorStoreProvider.CHROMA:
-                vector_store = ChromaVectorStore(
-                    persist_directory=config.persist_directory,
-                    collection_name=config.collection_name,
-                    similarity_metric=config.similarity_metric
-                )
-            else:
-                raise VectorStoreNotFoundError(f"Provider {config.db_provider} not supported")
+            store_cls = config.db_provider.store_class
+            vector_store: VectorStore = store_cls.create_from_config(config)
             
             # Initialize the store
             vector_store.initialize()

@@ -1,6 +1,12 @@
+from __future__ import annotations
+
 from abc import ABC, abstractmethod
-from typing import List, Dict, Any, Optional
+from typing import TYPE_CHECKING, Any, Dict, List, Optional
+
 from pydantic import BaseModel
+
+if TYPE_CHECKING:
+    from knowlang.configs import DBConfig
 
 
 class VectorStoreError(Exception):
@@ -23,6 +29,12 @@ class SearchResult(BaseModel):
 
 class VectorStore(ABC):
     """Abstract base class for vector store implementations"""
+
+    @classmethod
+    @abstractmethod
+    def create_from_config(config: DBConfig) -> "VectorStore":
+        """Create a VectorStore instance from configuration"""
+        pass
     
     @abstractmethod
     async def add_documents(

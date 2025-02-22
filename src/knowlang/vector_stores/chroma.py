@@ -1,14 +1,30 @@
+from __future__ import annotations
 
 from pathlib import Path
+from typing import TYPE_CHECKING, Any, Dict, List, Literal, Optional
+
 import chromadb
-from typing import List, Dict, Any, Literal, Optional
 from chromadb.config import Settings
 from chromadb.errors import InvalidCollectionException
 
-from knowlang.vector_stores.base import VectorStore, SearchResult, VectorStoreError, VectorStoreInitError
+from knowlang.vector_stores.base import (SearchResult, VectorStore,
+                                         VectorStoreError,
+                                         VectorStoreInitError)
+
+if TYPE_CHECKING:
+    from knowlang.configs import DBConfig
+
 
 class ChromaVectorStore(VectorStore):
     """ChromaDB implementation of VectorStore"""
+
+    @classmethod
+    def create_from_config(cls, config: DBConfig) -> "VectorStore":
+        return cls(
+            persist_directory=config.persist_directory,
+            collection_name=config.collection_name,
+            similarity_metric=config.similarity_metric
+        )
     
     def __init__(
         self, 

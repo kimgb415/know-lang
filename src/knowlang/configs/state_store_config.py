@@ -1,5 +1,6 @@
 from pathlib import Path
 from typing import Any, Dict, Optional
+
 from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings
 
@@ -75,5 +76,3 @@ class StateStoreConfig(BaseSettings):
                 'url': self.connection_url,
                 **common_args,
             }
-        else:
-            raise ValueError(f"Unsupported state store type: {self.provider}")
