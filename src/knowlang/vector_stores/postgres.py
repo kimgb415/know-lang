@@ -61,7 +61,7 @@ class PostgresVectorStore(VectorStore):
         if not config.connection_url:
             raise VectorStoreInitError("Connection url not set for PostgresVectorStore.")
         return cls(
-            connection_string=config.state_store.connection_url,
+            connection_string=config.connection_url,
             table_name=config.collection_name,
             similarity_metric=config.similarity_metric
         )
