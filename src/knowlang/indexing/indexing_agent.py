@@ -8,7 +8,7 @@ from knowlang.core.types import CodeChunk, DatabaseChunkMetadata
 from knowlang.models import generate_embedding
 from knowlang.utils import (FancyLogger, create_pydantic_model,
                             format_code_summary)
-from knowlang.vector_stores import VectorStoreFactory
+from knowlang.vector_stores.factory import VectorStoreFactory
 
 LOG = FancyLogger(__name__)
 
@@ -23,7 +23,7 @@ class IndexingAgent:
         If vector store is not provided, creates one based on config.
         """
         self.config = config
-        self.vector_store = VectorStoreFactory.get(config.db)
+        self.vector_store = VectorStoreFactory.get(config.db, config.embedding)
         self._init_agent()
 
     def _init_agent(self):

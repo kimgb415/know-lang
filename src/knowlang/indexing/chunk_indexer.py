@@ -6,7 +6,7 @@ from knowlang.core.types import CodeChunk, DatabaseChunkMetadata
 from knowlang.indexing.indexing_agent import IndexingAgent
 from knowlang.models import generate_embedding
 from knowlang.utils import FancyLogger
-from knowlang.vector_stores import VectorStoreFactory
+from knowlang.vector_stores.factory import VectorStoreFactory
 
 LOG = FancyLogger(__name__)
 
@@ -15,7 +15,7 @@ class ChunkIndexer:
     
     def __init__(self, config: AppConfig):
         self.config = config
-        self.vector_store = VectorStoreFactory.get(config.db)
+        self.vector_store = VectorStoreFactory.get(config.db, config.embedding)
         self.indexing_agent = IndexingAgent(config)
 
     async def process_chunk(self, chunk: CodeChunk) -> str:

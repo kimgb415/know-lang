@@ -3,7 +3,8 @@ from knowlang.chat_bot import create_chatbot
 from knowlang.cli.types import ChatCommandArgs
 from knowlang.configs import AppConfig
 from knowlang.utils import FancyLogger
-from knowlang.vector_stores import VectorStoreError, VectorStoreFactory
+from knowlang.vector_stores import VectorStoreError
+from knowlang.vector_stores.factory import VectorStoreFactory
 
 LOG = FancyLogger(__name__)
 
@@ -25,7 +26,7 @@ async def chat_command(args: ChatCommandArgs) -> None:
     
     # Initialize vector store
     try:
-        VectorStoreFactory.get(config.db)
+        VectorStoreFactory.get(config.db, config.embedding)
     except VectorStoreError as e:
         LOG.error(
             "Vector store initialization failed. Please run 'knowlang parse' first to index your codebase."
