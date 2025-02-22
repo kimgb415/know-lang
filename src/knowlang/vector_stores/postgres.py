@@ -108,17 +108,16 @@ class PostgresVectorStore(VectorStore):
         try:
             with conn.cursor(cursor_factory=RealDictCursor) as cur:
                 search_query = f"""
-                SELECT id, document, metadata, (embedding <=> %s) AS distance
+                SELECT id, document, metadata, (embedding <=> (%s)::vector) AS distance
                 FROM {self.table_name}
-                ORDER BY embedding <=> %s
+                ORDER BY embedding <=> (%s)::vector
                 LIMIT %s;
                 """
                 cur.execute(search_query, (query_embedding, query_embedding, top_k))
                 records = cur.fetchall()
                 results = []
                 for record in records:
-                    # Convert distance to a similarity score (this conversion may vary).
-                    score = 1.0 - record["distance"]
+                    score = 1.0 - record["distance"] # Convert distance to similarity score
                     if score_threshold is None or score >= score_threshold:
                         results.append(SearchResult(
                             document=record["document"],
