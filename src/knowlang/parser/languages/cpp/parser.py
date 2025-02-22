@@ -1,13 +1,14 @@
 # languages/cpp/parser.py
-from typing import List, Optional
 from pathlib import Path
-import tree_sitter_cpp
-from tree_sitter import Language, Parser, Node
+from typing import List, Optional
 
+import tree_sitter_cpp
+from tree_sitter import Language, Node, Parser
+
+from knowlang.core.types import (BaseChunkType, CodeChunk, CodeLocation,
+                                 CodeMetadata, LanguageEnum)
 from knowlang.parser.base.parser import LanguageParser
-from knowlang.core.types import CodeChunk, BaseChunkType, CodeLocation, CodeMetadata, LanguageEnum
-from knowlang.utils.chunking_util import convert_to_relative_path
-from knowlang.utils.fancy_log import FancyLogger
+from knowlang.utils import FancyLogger, convert_to_relative_path
 
 LOG = FancyLogger(__name__)
 

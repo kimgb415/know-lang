@@ -1,13 +1,15 @@
-from pathlib import Path
 import asyncio
+from pathlib import Path
+from typing import List
+
 import chromadb
 from chromadb.errors import InvalidCollectionException
-from rich.progress import Progress
 from rich.console import Console
-from typing import List
-from knowlang.configs.config import AppConfig, EmbeddingConfig
-from knowlang.models.embeddings import generate_embedding, EmbeddingInputType
-from knowlang.utils.fancy_log import FancyLogger
+from rich.progress import Progress
+
+from knowlang.configs import AppConfig, EmbeddingConfig
+from knowlang.models import EmbeddingInputType, generate_embedding
+from knowlang.utils import FancyLogger
 
 LOG = FancyLogger(__name__)
 console = Console()

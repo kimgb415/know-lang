@@ -1,15 +1,15 @@
-from pathlib import Path
 import hashlib
-from datetime import datetime
-from typing import Set
-from git import Repo, InvalidGitRepositoryError
 import os
+from datetime import datetime
+from pathlib import Path
+from typing import Set
 
+from git import InvalidGitRepositoryError, Repo
+
+from knowlang.configs import AppConfig
 from knowlang.indexing.file_utils import compute_file_hash, get_relative_path
 from knowlang.indexing.state_store.base import FileState
-from knowlang.utils.chunking_util import convert_to_relative_path
-from knowlang.configs.config import AppConfig
-from knowlang.utils.fancy_log import FancyLogger
+from knowlang.utils import FancyLogger, convert_to_relative_path
 
 LOG = FancyLogger(__name__)
 

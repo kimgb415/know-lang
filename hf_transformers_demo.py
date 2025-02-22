@@ -1,6 +1,5 @@
 from knowlang.chat_bot.chat_interface import create_chatbot
-from knowlang.configs.config import AppConfig
-
+from knowlang.configs import AppConfig
 
 config = AppConfig()
 demo = create_chatbot(config)

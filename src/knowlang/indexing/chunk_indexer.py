@@ -1,13 +1,12 @@
-from typing import List, Set
 from pathlib import Path
+from typing import List, Set
 
+from knowlang.configs import AppConfig
 from knowlang.core.types import CodeChunk, DatabaseChunkMetadata
 from knowlang.indexing.indexing_agent import IndexingAgent
-from knowlang.models.embeddings import generate_embedding
-from knowlang.vector_stores.base import VectorStore
-from knowlang.configs.config import AppConfig
-from knowlang.utils.fancy_log import FancyLogger
-from knowlang.vector_stores.factory import VectorStoreFactory
+from knowlang.models import generate_embedding
+from knowlang.utils import FancyLogger
+from knowlang.vector_stores import VectorStoreFactory
 
 LOG = FancyLogger(__name__)
 

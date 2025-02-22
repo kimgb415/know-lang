@@ -3,7 +3,7 @@ import asyncio
 from typing import Optional, Sequence
 
 from knowlang.cli.parser import parse_args
-from knowlang.utils.fancy_log import FancyLogger
+from knowlang.utils import FancyLogger
 
 LOG = FancyLogger(__name__)
 

@@ -1,16 +1,18 @@
 """Unit tests for CLI command implementations."""
-import pytest
 from pathlib import Path
-from unittest.mock import MagicMock, Mock, patch, AsyncMock
+from unittest.mock import AsyncMock, MagicMock, Mock, patch
 
-from knowlang.cli.commands.parse import parse_command
+import pytest
+
 from knowlang.cli.commands.chat import chat_command, create_config
-from knowlang.cli.types import ParseCommandArgs, ChatCommandArgs
-from knowlang.configs.config import AppConfig
+from knowlang.cli.commands.parse import parse_command
+from knowlang.cli.types import ChatCommandArgs, ParseCommandArgs
+from knowlang.configs import AppConfig
 from knowlang.core.types import CodeChunk
 from knowlang.indexing.state_store.base import FileChange, StateChangeType
-from knowlang.vector_stores.base import VectorStoreError
+from knowlang.vector_stores import VectorStoreError
 from knowlang.vector_stores.mock import MockVectorStore
+
 
 @pytest.fixture
 def mock_parser_factory():

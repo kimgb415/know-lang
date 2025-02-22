@@ -1,9 +1,11 @@
+import os
 from pathlib import Path
 from typing import Generator
+
 from git import Repo
-from knowlang.configs.config import AppConfig
+
+from knowlang.configs import AppConfig
 from knowlang.parser.base.provider import CodeProvider
-import os
 
 
 class GitProvider(CodeProvider):

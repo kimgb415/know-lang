@@ -1,8 +1,10 @@
+import os
 from pathlib import Path
 from typing import Generator
-from knowlang.configs.config import AppConfig
+
+from knowlang.configs import AppConfig
 from knowlang.parser.base.provider import CodeProvider
-import os
+
 
 class FilesystemProvider(CodeProvider):
     """Provides code files from a filesystem directory"""

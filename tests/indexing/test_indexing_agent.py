@@ -1,18 +1,17 @@
-import pytest
 import tempfile
-from unittest.mock import Mock, patch, AsyncMock
 from pathlib import Path
+from unittest.mock import AsyncMock, Mock, patch
+
+import pytest
+
+from knowlang.configs import AppConfig
+from knowlang.core.types import (BaseChunkType, CodeChunk, CodeLocation,
+                                 LanguageEnum)
 from knowlang.indexing.indexing_agent import IndexingAgent
-from knowlang.core.types import (
-    CodeChunk, 
-    BaseChunkType, 
-    CodeLocation, 
-    LanguageEnum
-)
-from knowlang.configs.config import AppConfig
-from knowlang.utils.chunking_util import format_code_summary
+from knowlang.utils import format_code_summary
+from knowlang.vector_stores import VectorStoreError
 from knowlang.vector_stores.mock import MockVectorStore
-from knowlang.vector_stores.base import VectorStoreError
+
 
 @pytest.fixture
 def config():

@@ -1,7 +1,9 @@
 from abc import ABC, abstractmethod
-from typing import Generator
 from pathlib import Path
-from knowlang.configs.config import AppConfig
+from typing import Generator
+
+from knowlang.configs import AppConfig
+
 
 class CodeProvider(ABC):
     """Abstract base class for code source providers"""

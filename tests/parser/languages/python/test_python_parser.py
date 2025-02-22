@@ -1,18 +1,15 @@
-import pytest
-from pathlib import Path
-from knowlang.configs.config import AppConfig
-from knowlang.core.types import BaseChunkType
-from tests.test_data.python_files import (
-    TEST_FILES,
-    INVALID_SYNTAX, 
-    SIMPLE_FILE_EXPECTATIONS,
-    NESTED_CLASS_EXPECTATIONS,
-    COMPLEX_FILE_EXPECTATIONS
-)
-from knowlang.core.types import CodeChunk
-from knowlang.parser.languages.python.parser import PythonParser
-from typing import List
 import tempfile
+from pathlib import Path
+from typing import List
+
+import pytest
+
+from knowlang.configs import AppConfig
+from knowlang.core.types import BaseChunkType, CodeChunk
+from knowlang.parser.languages.python.parser import PythonParser
+from tests.test_data.python_files import (COMPLEX_FILE_EXPECTATIONS,
+                                          INVALID_SYNTAX,
+                                          SIMPLE_FILE_EXPECTATIONS, TEST_FILES)
 
 
 @pytest.fixture

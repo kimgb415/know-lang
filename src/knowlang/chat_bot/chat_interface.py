@@ -1,15 +1,15 @@
 from dataclasses import dataclass
+from typing import AsyncGenerator, Dict, List
+
 import gradio as gr
-from knowlang.configs.config import AppConfig
-from knowlang.utils.fancy_log import FancyLogger
-from knowlang.utils.rate_limiter import RateLimiter
-from knowlang.chat_bot.chat_graph import stream_chat_progress, ChatStatus
-from knowlang.chat_bot.feedback import ChatAnalytics
-from typing import List, Dict, AsyncGenerator
 from gradio import ChatMessage
 
-from knowlang.vector_stores.factory import VectorStoreFactory
+from knowlang.configs import AppConfig
+from knowlang.utils import FancyLogger, RateLimiter
+from knowlang.vector_stores import VectorStoreFactory
 
+from .chat_graph import ChatStatus, stream_chat_progress
+from .feedback import ChatAnalytics
 
 LOG = FancyLogger(__name__)
 

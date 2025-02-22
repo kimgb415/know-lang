@@ -1,9 +1,12 @@
-import pytest
 from pathlib import Path
 from typing import List
+
+import pytest
+
+from knowlang.configs import AppConfig
 from knowlang.core.types import BaseChunkType, CodeChunk
 from knowlang.parser.languages.cpp.parser import CppParser
-from knowlang.configs.config import AppConfig
+
 
 @pytest.fixture
 def cpp_parser(test_config):

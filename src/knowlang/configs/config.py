@@ -1,13 +1,16 @@
-from typing import Literal, Optional, Dict, Any, List
-from pydantic_settings import BaseSettings
-from pydantic import Field, field_validator, ValidationInfo
-from pathlib import Path
 import fnmatch
+import os
+from pathlib import Path
+from typing import Any, Dict, List, Literal, Optional
+
+from pydantic import Field, ValidationInfo, field_validator
+from pydantic_settings import BaseSettings
+
 from knowlang.configs.base import generate_model_config
+from knowlang.configs.chat_config import ChatbotAnalyticsConfig, ChatConfig
 from knowlang.configs.state_store_config import StateStoreConfig
 from knowlang.core.types import ModelProvider, VectorStoreProvider
-from knowlang.configs.chat_config import ChatConfig, ChatbotAnalyticsConfig
-import os
+
 
 def _validate_api_key(v: Optional[str], info: ValidationInfo) -> Optional[str]:
     """Validate API key is present when required"""

@@ -1,9 +1,11 @@
-from typing import List, Dict, Any, Optional, Callable
 from dataclasses import dataclass, field
-import numpy as np
+from typing import Any, Callable, Dict, List, Optional
 from unittest.mock import AsyncMock
 
-from knowlang.vector_stores.base import VectorStore, SearchResult, VectorStoreError
+import numpy as np
+
+from knowlang.vector_stores import SearchResult, VectorStore, VectorStoreError
+
 
 @dataclass
 class MockVectorStore(VectorStore):

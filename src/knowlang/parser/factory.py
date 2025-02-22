@@ -1,10 +1,11 @@
-from typing import Dict, Type, Optional
 from pathlib import Path
+from typing import Dict, Optional, Type
 
+from knowlang.configs import AppConfig
 from knowlang.parser.base.parser import LanguageParser
 from knowlang.parser.languages.cpp.parser import CppParser
 from knowlang.parser.languages.python.parser import PythonParser
-from knowlang.configs.config import AppConfig
+
 
 class CodeParserFactory():
     """Concrete implementation of parser factory"""
