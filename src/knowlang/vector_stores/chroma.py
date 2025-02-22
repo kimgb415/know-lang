@@ -19,7 +19,7 @@ class ChromaVectorStore(VectorStore):
     """ChromaDB implementation of VectorStore"""
 
     @classmethod
-    def create_from_config(cls, config: DBConfig) -> "VectorStore":
+    def create_from_config(cls, config: DBConfig) -> "ChromaVectorStore":
         return cls(
             persist_directory=config.persist_directory,
             collection_name=config.collection_name,
