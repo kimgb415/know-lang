@@ -13,7 +13,7 @@ class StateManager:
     
     def __init__(self, config: AppConfig):
         self.state_store = StateStore(config.db)
-        self.vector_store = VectorStoreFactory.get(config.db)
+        self.vector_store = VectorStoreFactory.get(config.db, config.embedding)
 
     async def get_file_state(self, file_path: Path) -> Optional[FileState]:
         """Get current state of a file"""

@@ -26,7 +26,7 @@ async def chat_command(args: ChatCommandArgs) -> None:
     
     # Initialize vector store
     try:
-        VectorStoreFactory.get(config.db)
+        VectorStoreFactory.get(config.db, config.embedding)
     except VectorStoreError as e:
         LOG.error(
             "Vector store initialization failed. Please run 'knowlang parse' first to index your codebase."

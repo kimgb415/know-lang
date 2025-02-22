@@ -6,7 +6,7 @@ from knowlang.vector_stores import (VectorStore, VectorStoreError,
                                     VectorStoreInitError)
 
 if TYPE_CHECKING:
-    from knowlang.configs import DBConfig
+    from knowlang.configs import DBConfig, EmbeddingConfig
 
 
 class VectorStoreFactory:
@@ -14,7 +14,8 @@ class VectorStoreFactory:
     
     @staticmethod
     def get(
-        config: DBConfig
+        config: DBConfig,
+        embedding_config: EmbeddingConfig
     ) -> VectorStore:
         """
         Create and initialize a vector store instance
@@ -30,7 +31,7 @@ class VectorStoreFactory:
         """
         try:
             store_cls = config.db_provider.store_class
-            vector_store: VectorStore = store_cls.create_from_config(config)
+            vector_store: VectorStore = store_cls.create_from_config(config, embedding_config)
             
             # Initialize the store
             vector_store.initialize()

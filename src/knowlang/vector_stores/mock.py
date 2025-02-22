@@ -9,7 +9,7 @@ import numpy as np
 from knowlang.vector_stores import SearchResult, VectorStore, VectorStoreError
 
 if TYPE_CHECKING:
-    from knowlang.configs import DBConfig
+    from knowlang.configs import DBConfig, EmbeddingConfig
 
 
 @dataclass
@@ -36,7 +36,7 @@ class MockVectorStore(VectorStore):
     updated_documents: List[str] = field(default_factory=list)
 
     @classmethod
-    def create_from_config(cls, config: DBConfig) -> "MockVectorStore":
+    def create_from_config(cls, config: DBConfig, embedding_config: EmbeddingConfig) -> "MockVectorStore":
         """Create a mock store instance from configuration"""
         return
     

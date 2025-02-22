@@ -12,14 +12,14 @@ from knowlang.vector_stores.base import (SearchResult, VectorStore,
                                          VectorStoreInitError)
 
 if TYPE_CHECKING:
-    from knowlang.configs import DBConfig
+    from knowlang.configs import DBConfig, EmbeddingConfig
 
 
 class ChromaVectorStore(VectorStore):
     """ChromaDB implementation of VectorStore"""
 
     @classmethod
-    def create_from_config(cls, config: DBConfig) -> "ChromaVectorStore":
+    def create_from_config(cls, config: DBConfig, embedding_config: EmbeddingConfig = None) -> "ChromaVectorStore":
         return cls(
             persist_directory=config.persist_directory,
             collection_name=config.collection_name,

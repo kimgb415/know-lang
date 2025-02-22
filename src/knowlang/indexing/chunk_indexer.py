@@ -15,7 +15,7 @@ class ChunkIndexer:
     
     def __init__(self, config: AppConfig):
         self.config = config
-        self.vector_store = VectorStoreFactory.get(config.db)
+        self.vector_store = VectorStoreFactory.get(config.db, config.embedding)
         self.indexing_agent = IndexingAgent(config)
 
     async def process_chunk(self, chunk: CodeChunk) -> str:

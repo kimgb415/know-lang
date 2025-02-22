@@ -1,14 +1,18 @@
 from __future__ import annotations
 
-from typing import Any, Dict, List, Literal, Optional
+from typing import TYPE_CHECKING, Any, Dict, List, Literal, Optional
 
 import psycopg2
+from ollama import embed
 from psycopg2 import pool
 from psycopg2.extras import Json, RealDictCursor
 
 from knowlang.vector_stores.base import (SearchResult, VectorStore,
                                          VectorStoreError,
                                          VectorStoreInitError)
+
+if TYPE_CHECKING:
+    from knowlang.configs import DBConfig, EmbeddingConfig
 
 
 class PostgresVectorStore(VectorStore):
@@ -18,7 +22,7 @@ class PostgresVectorStore(VectorStore):
         self,
         connection_string: str,
         table_name: str,
-        embedding_dim: int = 1536,
+        embedding_dim: int,
         similarity_metric: Literal['cosine'] = 'cosine'
     ):
         self.connection_string = connection_string
@@ -57,16 +61,17 @@ class PostgresVectorStore(VectorStore):
             raise VectorStoreInitError(f"Failed to initialize PostgresVectorStore: {str(e)}") from e
 
     @classmethod
-    def create_from_config(cls, config: DBConfig) -> "PostgresVectorStore":
+    def create_from_config(cls, config: DBConfig, embedding_config: EmbeddingConfig) -> "PostgresVectorStore":
         if not config.connection_url:
             raise VectorStoreInitError("Connection url not set for PostgresVectorStore.")
         return cls(
             connection_string=config.connection_url,
             table_name=config.collection_name,
-            similarity_metric=config.similarity_metric
+            embedding_dim=embedding_config.dimension,
+            similarity_metric=config.similarity_metric,
         )
 
-    def add_documents(
+    async def add_documents(
         self,
         documents: List[str],
         embeddings: List[List[float]],
@@ -91,7 +96,7 @@ class PostgresVectorStore(VectorStore):
         finally:
             self.pool.putconn(conn)
 
-    def search(
+    async def search(
         self,
         query_embedding: List[float],
         top_k: int = 5,
@@ -124,7 +129,7 @@ class PostgresVectorStore(VectorStore):
         finally:
             self.pool.putconn(conn)
 
-    def delete(self, ids: List[str]) -> None:
+    async def delete(self, ids: List[str]) -> None:
         if self.pool is None:
             raise VectorStoreError("PostgresVectorStore is not initialized.")
         conn = self.pool.getconn()
@@ -136,7 +141,7 @@ class PostgresVectorStore(VectorStore):
         finally:
             self.pool.putconn(conn)
 
-    def get_document(self, id: str) -> Optional[SearchResult]:
+    async def get_document(self, id: str) -> Optional[SearchResult]:
         if self.pool is None:
             raise VectorStoreError("PostgresVectorStore is not initialized.")
         conn = self.pool.getconn()
@@ -155,7 +160,7 @@ class PostgresVectorStore(VectorStore):
         finally:
             self.pool.putconn(conn)
 
-    def update_document(
+    async def update_document(
         self,
         id: str,
         document: str,
@@ -177,7 +182,7 @@ class PostgresVectorStore(VectorStore):
         finally:
             self.pool.putconn(conn)
 
-    def get_all(self) -> List[SearchResult]:
+    async def get_all(self) -> List[SearchResult]:
         if self.pool is None:
             raise VectorStoreError("PostgresVectorStore is not initialized.")
         conn = self.pool.getconn()
