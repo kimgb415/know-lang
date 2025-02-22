@@ -5,15 +5,17 @@ from typing import Optional, Sequence, Union, Dict, Type, Callable
 
 from knowlang.cli.commands.chat import chat_command
 from knowlang.cli.commands.parse import parse_command
-from knowlang.cli.types import ChatCommandArgs, ParseCommandArgs, BaseCommandArgs
+from knowlang.cli.types import ChatCommandArgs, ParseCommandArgs, BaseCommandArgs, ServeCommandArgs
+from knowlang.cli.commands.serve import serve_command
 
 # Define command configurations
 COMMAND_CONFIGS: Dict[str, tuple[Type[BaseCommandArgs], Callable]] = {
     "parse": (ParseCommandArgs, parse_command),
     "chat": (ChatCommandArgs, chat_command),
+    "serve": (ServeCommandArgs, serve_command),
 }
 
-def _convert_to_args(parsed_namespace: argparse.Namespace) -> Union[ParseCommandArgs, ChatCommandArgs]:
+def _convert_to_args(parsed_namespace: argparse.Namespace) -> Union[ParseCommandArgs, ChatCommandArgs, ServeCommandArgs]:
     """Convert parsed namespace to typed arguments."""
     base_args = {
         "verbose": parsed_namespace.verbose,
@@ -37,6 +39,14 @@ def _convert_to_args(parsed_namespace: argparse.Namespace) -> Union[ParseCommand
             share=parsed_namespace.share,
             server_port=parsed_namespace.server_port,
             server_name=parsed_namespace.server_name
+        )
+    elif parsed_namespace.command == "serve":
+        args = args_class(
+            **base_args,
+            host=parsed_namespace.host,
+            port=parsed_namespace.port,
+            reload=parsed_namespace.reload,
+            workers=parsed_namespace.workers
         )
     else:
         raise ValueError(f"Unknown command: {parsed_namespace.command}")
@@ -115,6 +125,35 @@ def create_parser() -> argparse.ArgumentParser:
         "--server-name",
         type=str,
         help="Server name to listen on (default: 0.0.0.0)"
+    )
+    
+    # Serve command
+    serve_parser = subparsers.add_parser(
+        "serve",
+        help="Launch the API server"
+    )
+    serve_parser.add_argument(
+        "--host",
+        type=str,
+        default="127.0.0.1",
+        help="Host to bind the server to (default: 127.0.0.1)"
+    )
+    serve_parser.add_argument(
+        "--port",
+        type=int,
+        default=8000,
+        help="Port to run the server on (default: 8000)"
+    )
+    serve_parser.add_argument(
+        "--reload",
+        action="store_true",
+        help="Enable auto-reload on code changes"
+    )
+    serve_parser.add_argument(
+        "--workers",
+        type=int,
+        default=1,
+        help="Number of worker processes (default: 1)"
     )
     
     return parser

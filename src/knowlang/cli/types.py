@@ -24,3 +24,12 @@ class ChatCommandArgs(BaseCommandArgs):
     share: bool = False
     server_port: Optional[int] = None
     server_name: Optional[str] = None
+
+@dataclass
+class ServeCommandArgs(BaseCommandArgs):
+    """Arguments for the serve command."""
+    command: Literal["serve"]
+    host: str = "127.0.0.1"
+    port: int = 8000
+    reload: bool = False
+    workers: int = 1
