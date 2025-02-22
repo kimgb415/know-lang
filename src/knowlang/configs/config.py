@@ -141,6 +141,10 @@ class DBConfig(BaseSettings):
         default=VectorStoreProvider.CHROMA,
         description="Vector Database provider"
     )
+    connection_url: Optional[str] = Field(
+        default=None,
+        description="Database connection URL (for network-based stores like PostgreSQL)"
+    )
     persist_directory: Path = Field(
         default=Path("./vectordb"),
         description="Directory to vector store"

@@ -54,7 +54,7 @@ class PostgresVectorStore(VectorStore):
 
     @classmethod
     def create_from_config(cls, config: DBConfig) -> "PostgresVectorStore":
-        if not config.state_store.connection_url:
+        if not config.connection_url:
             raise VectorStoreInitError("Connection url not set for PostgresVectorStore.")
         return cls(
             connection_string=config.state_store.connection_url,
