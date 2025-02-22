@@ -110,6 +110,13 @@ Alternatively, you can clone the repository and install it in editable mode:
 git clone https://github.com/KnowLangOrg/know-lang.git
 cd know-lang
 pip install -e .
+
+# if using Poetry
+poetry install
+poetry env activate
+# poetry will output
+# source path/activate <- run this command
+source path_provided_by_poetry/activate
 ```
 
 This allows you to make changes to the source code and have them immediately reflected without reinstalling the package.
