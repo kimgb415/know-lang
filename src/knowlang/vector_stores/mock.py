@@ -40,6 +40,11 @@ class MockVectorStore(VectorStore):
         """Create a mock store instance from configuration"""
         return
     
+    @classmethod
+    def initialize(self) -> None:
+        """Initialize mock vector store"""
+        return
+    
     def __post_init__(self):
         """Set up tracking mocks for call verification"""
         # Create wrappers for method call tracking

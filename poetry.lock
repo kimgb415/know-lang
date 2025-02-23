@@ -3098,6 +3098,22 @@ test = ["hypothesis (>=6.46.1)", "pytest (>=7.3.2)", "pytest-xdist (>=2.2.0)"]
 xml = ["lxml (>=4.9.2)"]
 
 [[package]]
+name = "pgvector"
+version = "0.3.6"
+description = "pgvector support for Python"
+optional = false
+python-versions = ">=3.8"
+groups = ["main"]
+markers = "python_version <= \"3.11\" or python_version >= \"3.12\""
+files = [
+    {file = "pgvector-0.3.6-py3-none-any.whl", hash = "sha256:f6c269b3c110ccb7496bac87202148ed18f34b390a0189c783e351062400a75a"},
+    {file = "pgvector-0.3.6.tar.gz", hash = "sha256:31d01690e6ea26cea8a633cde5f0f55f5b246d9c8292d68efdef8c22ec994ade"},
+]
+
+[package.dependencies]
+numpy = "*"
+
+[[package]]
 name = "pillow"
 version = "11.1.0"
 description = "Python Imaging Library (Fork)"
@@ -3206,15 +3222,15 @@ testing = ["pytest", "pytest-benchmark"]
 
 [[package]]
 name = "posthog"
-version = "3.15.0"
+version = "3.15.1"
 description = "Integrate PostHog into any python application."
 optional = false
 python-versions = "*"
 groups = ["main"]
 markers = "python_version <= \"3.11\" or python_version >= \"3.12\""
 files = [
-    {file = "posthog-3.15.0-py2.py3-none-any.whl", hash = "sha256:e546edd9a3d9ab4b50cdb57d6e9443826cee2254ea1c3a20cfe1e43e7b54c3c1"},
-    {file = "posthog-3.15.0.tar.gz", hash = "sha256:c8503b911fb04b8fbae55ba828f0fda1e2da6e644d135e77b8000a7b82c8dd39"},
+    {file = "posthog-3.15.1-py2.py3-none-any.whl", hash = "sha256:df5700f5cc26b7d08e81d15f0a11b68f4a0f5cec7422984cd4118d5d475e99e6"},
+    {file = "posthog-3.15.1.tar.gz", hash = "sha256:ea42b83c985ce28f2ae46713469b4107762805250c21807bc456c3fdc5ae940c"},
 ]
 
 [package.dependencies]
@@ -3385,6 +3401,22 @@ dev = ["ast-comments (>=1.1.2)", "black (>=24.1.0)", "codespell (>=2.2)", "dnspy
 docs = ["Sphinx (>=5.0)", "furo (==2022.6.21)", "sphinx-autobuild (>=2021.3.14)", "sphinx-autodoc-typehints (>=1.12)"]
 pool = ["psycopg-pool"]
 test = ["anyio (>=4.0)", "mypy (>=1.14)", "pproxy (>=2.7)", "pytest (>=6.2.5)", "pytest-cov (>=3.0)", "pytest-randomly (>=3.5)"]
+
+[[package]]
+name = "psycopg-pool"
+version = "3.2.5"
+description = "Connection Pool for Psycopg"
+optional = false
+python-versions = ">=3.8"
+groups = ["main"]
+markers = "python_version <= \"3.11\" or python_version >= \"3.12\""
+files = [
+    {file = "psycopg_pool-3.2.5-py3-none-any.whl", hash = "sha256:522b9befae8631550217fd2ae9904622daaf4b28a0a36ccfcc87ba3d2abc7100"},
+    {file = "psycopg_pool-3.2.5.tar.gz", hash = "sha256:507d845bd13da83df449ded7fb581b35dba613421bdb12962e608b16e70d6be9"},
+]
+
+[package.dependencies]
+typing-extensions = ">=4.6"
 
 [[package]]
 name = "psycopg2"
@@ -5113,4 +5145,4 @@ type = ["pytest-mypy"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.10, <3.13"
-content-hash = "6e3a659cf5f7b0e832abb26cd2ef78ccb82c58f67fbb394a796729626ac0dc5d"
+content-hash = "951d3a766e12c2304b12641acb6a066f8a47cce96622518c745797b418a36ece"
