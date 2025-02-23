@@ -1,5 +1,6 @@
 from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.openapi.utils import get_openapi
 from pydantic import BaseModel
 from sse_starlette.sse import EventSourceResponse
 from knowlang.configs import AppConfig
@@ -11,16 +12,35 @@ from knowlang.chat_bot import (
     ChatAnalytics,
     StreamingChatResult,
 )
+from knowlang.api import ApiModelRegistry
 
 LOG = FancyLogger(__name__)
 
-
+@ApiModelRegistry.register
 class ServerSentChatEvent(BaseModel):
     event: ChatStatus
     data: StreamingChatResult
 
+def custom_openapi():
+    if app.openapi_schema:
+        return app.openapi_schema
+    
+    openapi_schema = get_openapi(
+        title="KnowLang API",
+        version="1.0.0",
+        description="API for KnowLang code understanding assistant",
+        routes=app.routes,
+    )
+    
+    # Add our models to components/schemas
+    openapi_schema["components"]["schemas"].update(ApiModelRegistry.get_all_schemas())
+    
+    app.openapi_schema = openapi_schema
+    return app.openapi_schema
+
 # Create FastAPI app
 app = FastAPI(title="KnowLang API")
+app.openapi = custom_openapi
 
 # Add CORS middleware
 app.add_middleware(

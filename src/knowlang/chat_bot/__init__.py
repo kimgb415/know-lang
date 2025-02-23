@@ -1,4 +1,9 @@
-from .chat_graph import ChatStatus, stream_chat_progress, StreamingChatResult
+from .chat_graph import (
+    ChatStatus, 
+    stream_chat_progress, 
+    StreamingChatResult, 
+    RetrievedContext
+)
 from .chat_interface import create_chatbot
 from .feedback import ChatAnalytics
 
@@ -8,4 +13,5 @@ __all__ = [
     "ChatAnalytics",
     "create_chatbot",
     "StreamingChatResult",
+    "RetrievedContext",
 ]

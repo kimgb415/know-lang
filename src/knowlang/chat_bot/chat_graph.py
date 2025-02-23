@@ -1,27 +1,32 @@
 # __future__ annotations is necessary for the type hints to work in this file
 from __future__ import annotations
-
 from dataclasses import dataclass
 from enum import Enum
 from typing import Any, AsyncGenerator, Dict, List, Optional
-
 import logfire
 import voyageai
 from pydantic import BaseModel
 from pydantic_ai import Agent
-from pydantic_graph import (BaseNode, End, EndStep, Graph, GraphRunContext,
-                            HistoryStep)
+from pydantic_graph import (
+    BaseNode, 
+    End, 
+    EndStep, 
+    Graph, 
+    GraphRunContext,
+    HistoryStep
+)
 from rich.console import Console
 from voyageai.object.reranking import RerankingObject
-
 from knowlang.configs import AppConfig, EmbeddingConfig, RerankerConfig
 from knowlang.models import EmbeddingInputType, generate_embedding
 from knowlang.utils import FancyLogger, create_pydantic_model, truncate_chunk
 from knowlang.vector_stores import SearchResult, VectorStore
+from knowlang.api import ApiModelRegistry
 
 LOG = FancyLogger(__name__)
 console = Console()
 
+@ApiModelRegistry.register
 class ChatStatus(str, Enum):
     """Enum for tracking chat progress status"""
     STARTING = "starting"
@@ -31,6 +36,7 @@ class ChatStatus(str, Enum):
     COMPLETE = "complete"
     ERROR = "error"
 
+@ApiModelRegistry.register
 class StreamingChatResult(BaseModel):
     """Extended chat result with streaming information"""
     answer: str
@@ -87,6 +93,7 @@ class StreamingChatResult(BaseModel):
             progress_message=f"An error occurred: {error_msg}"
         )
 
+@ApiModelRegistry.register
 class RetrievedContext(BaseModel):
     """Structure for retrieved context"""
     chunks: List[str]
