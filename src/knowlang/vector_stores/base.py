@@ -35,6 +35,12 @@ class VectorStore(ABC):
     def create_from_config(config: DBConfig) -> "VectorStore":
         """Create a VectorStore instance from configuration"""
         pass
+
+    @classmethod
+    @abstractmethod
+    def initialize(self) -> None:
+        """Initialize the vector store"""
+        pass
     
     @abstractmethod
     async def add_documents(
