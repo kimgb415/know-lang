@@ -3,7 +3,7 @@ import uvicorn
 from knowlang.cli.types import ServeCommandArgs
 from knowlang.configs import AppConfig
 from knowlang.utils import FancyLogger
-from knowlang.vector_stores import VectorStoreError, VectorStoreFactory
+from knowlang.vector_stores.factory import VectorStoreError, VectorStoreFactory
 
 LOG = FancyLogger(__name__)
 
