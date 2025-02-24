@@ -48,6 +48,12 @@ class PostgresVectorStore(VectorStore):
             self.collection = vx.get_or_create_collection(name=self.table_name, dimension=self.embedding_dim)
         except Exception as e:
             raise VectorStoreInitError(f"Failed to initialize PostgresVectorStore: {str(e)}") from e
+        
+        try:
+            self.collection.create_index(measure=self.measure(), replace=False)
+        except Exception as e:
+            # index already exists, ignore
+            return
 
     def measure(self) -> vecs.IndexMeasure:
         if "cosine" in self.similarity_metric:
@@ -76,7 +82,6 @@ class PostgresVectorStore(VectorStore):
             raise VectorStoreError("Number of documents and ids must match.")
         vectors = [(id, emb, meta) for id, emb, meta in zip(ids, embeddings, metadatas)]
         self.collection.upsert(records=vectors)
-        self.collection.create_index(measure=self.measure())
 
     def accumulate_result(
         self,
