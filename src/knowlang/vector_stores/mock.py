@@ -94,6 +94,14 @@ class MockVectorStore(VectorStore):
         """Mock vector search with call tracking"""
         return await self.search_mock(query_embedding, top_k, score_threshold)
     
+    def accumulate_result(
+        self,
+        acc: List[SearchResult], 
+        record: Any, 
+        score_threshold: Optional[float] = None
+    ) -> List[SearchResult]:
+        return []
+    
     async def _search(
         self,
         query_embedding: List[float],

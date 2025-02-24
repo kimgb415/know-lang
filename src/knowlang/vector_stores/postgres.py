@@ -84,11 +84,12 @@ class PostgresVectorStore(VectorStore):
         record: Record, 
         score_threshold: Optional[float] = None
     ) -> List[SearchResult]:
-        score = 1.0 - record[1]  # Convert distance to similarity score
+        id, dist, meta = record
+        score = 1.0 - dist  # Convert distance to similarity score
         if score_threshold is None or score >= score_threshold:
             acc.append(SearchResult(
-                document=record[0],
-                metadata=record[2],
+                document=id,
+                metadata=meta,
                 score=score
             ))
         return acc

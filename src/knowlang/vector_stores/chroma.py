@@ -33,11 +33,12 @@ class ChromaVectorStore(VectorStore):
         score_threshold: Optional[float] = None
     ) -> List[SearchResult]:
         doc, meta, dist = record
-        if score_threshold is None or dist <= score_threshold:
+        score = 1.0 - dist  # Convert distance to similarity score
+        if score_threshold is None or score >= score_threshold:
             acc.append(SearchResult(
                 document=doc,
                 metadata=meta,
-                score=1.0 - dist  # Convert distance to similarity score
+                score=score
             ))
         return acc
 
