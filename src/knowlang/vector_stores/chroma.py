@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from itertools import zip_longest
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Dict, List, Literal, Optional, Tuple
 
@@ -103,10 +104,11 @@ class ChromaVectorStore(VectorStore):
             n_results=top_k,
             include=['metadatas', 'documents', 'distances']
         )
-        return zip(
+        return zip_longest(
             results['documents'][0],
             results['metadatas'][0],
-            results['distances'][0]
+            results['distances'][0],
+            fillvalue={}
         )
 
     async def delete(self, ids: List[str]) -> None:

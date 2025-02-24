@@ -58,7 +58,7 @@ class VectorStore(ABC):
         record: Any, 
         score_threshold: Optional[float] = None
     ) -> List[SearchResult]:
-        """Accumulate search results"""
+        """Accumulate search result"""
         pass
     
     @abstractmethod
