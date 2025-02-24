@@ -2,10 +2,10 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, Dict, List, Literal, Optional
 
-import psycopg2
-from ollama import embed
-from psycopg2 import pool
-from psycopg2.extras import Json, RealDictCursor
+import psycopg
+from pgvector.psycopg import register_vector
+from psycopg.types.json import Json
+from psycopg_pool import ConnectionPool
 
 from knowlang.vector_stores.base import (SearchResult, VectorStore,
                                          VectorStoreError,
@@ -16,7 +16,7 @@ if TYPE_CHECKING:
 
 
 class PostgresVectorStore(VectorStore):
-    """Postgres implementation of VectorStore compatible with pgvector extension (synchronous version)."""
+    """Postgres implementation of VectorStore compatible with the pgvector extension using psycopg."""
 
     def __init__(
         self,
@@ -29,18 +29,17 @@ class PostgresVectorStore(VectorStore):
         self.table_name = table_name
         self.embedding_dim = embedding_dim
         self.similarity_metric = similarity_metric
-        self.pool: Optional[pool.SimpleConnectionPool] = None
+        self.pool: Optional[ConnectionPool] = None
 
     def initialize(self) -> None:
         """Synchronously initialize the Postgres connection pool and ensure the vector store table exists."""
         try:
-            self.pool = psycopg2.pool.SimpleConnectionPool(
-                minconn=1,
-                maxconn=10,
-                dsn=self.connection_string
+            self.pool = ConnectionPool(
+                self.connection_string,
+                min_size=1,
+                max_size=10,
             )
-            conn = self.pool.getconn()
-            try:
+            with self.pool.connection() as conn:
                 with conn.cursor() as cur:
                     # Ensure the pgvector extension is available.
                     cur.execute("CREATE EXTENSION IF NOT EXISTS vector;")
@@ -54,9 +53,8 @@ class PostgresVectorStore(VectorStore):
                     );
                     """
                     cur.execute(create_table_query)
-                    conn.commit()
-            finally:
-                self.pool.putconn(conn)
+                register_vector(conn)
+                conn.commit()
         except Exception as e:
             raise VectorStoreInitError(f"Failed to initialize PostgresVectorStore: {str(e)}") from e
 
@@ -82,8 +80,7 @@ class PostgresVectorStore(VectorStore):
             raise VectorStoreError("PostgresVectorStore is not initialized.")
         if ids is None:
             ids = [str(i) for i in range(len(documents))]
-        conn = self.pool.getconn()
-        try:
+        with self.pool.connection() as conn:
             with conn.cursor() as cur:
                 insert_query = f"""
                 INSERT INTO {self.table_name} (id, document, embedding, metadata)
@@ -92,9 +89,7 @@ class PostgresVectorStore(VectorStore):
                 """
                 for doc, emb, meta, id_ in zip(documents, embeddings, metadatas, ids):
                     cur.execute(insert_query, (id_, doc, emb, Json(meta)))
-                conn.commit()
-        finally:
-            self.pool.putconn(conn)
+            conn.commit()
 
     async def search(
         self,
@@ -104,9 +99,8 @@ class PostgresVectorStore(VectorStore):
     ) -> List[SearchResult]:
         if self.pool is None:
             raise VectorStoreError("PostgresVectorStore is not initialized.")
-        conn = self.pool.getconn()
-        try:
-            with conn.cursor(cursor_factory=RealDictCursor) as cur:
+        with self.pool.connection() as conn:
+            with conn.cursor(row_factory=psycopg.rows.dict_row) as cur:
                 search_query = f"""
                 SELECT id, document, metadata, (embedding <=> (%s)::vector) AS distance
                 FROM {self.table_name}
@@ -117,7 +111,7 @@ class PostgresVectorStore(VectorStore):
                 records = cur.fetchall()
                 results = []
                 for record in records:
-                    score = 1.0 - record["distance"] # Convert distance to similarity score
+                    score = 1.0 - record["distance"]  # Convert distance to similarity score
                     if score_threshold is None or score >= score_threshold:
                         results.append(SearchResult(
                             document=record["document"],
@@ -125,27 +119,21 @@ class PostgresVectorStore(VectorStore):
                             score=score
                         ))
                 return results
-        finally:
-            self.pool.putconn(conn)
 
     async def delete(self, ids: List[str]) -> None:
         if self.pool is None:
             raise VectorStoreError("PostgresVectorStore is not initialized.")
-        conn = self.pool.getconn()
-        try:
+        with self.pool.connection() as conn:
             with conn.cursor() as cur:
                 delete_query = f"DELETE FROM {self.table_name} WHERE id = ANY(%s);"
                 cur.execute(delete_query, (ids,))
-                conn.commit()
-        finally:
-            self.pool.putconn(conn)
+            conn.commit()
 
     async def get_document(self, id: str) -> Optional[SearchResult]:
         if self.pool is None:
             raise VectorStoreError("PostgresVectorStore is not initialized.")
-        conn = self.pool.getconn()
-        try:
-            with conn.cursor(cursor_factory=RealDictCursor) as cur:
+        with self.pool.connection() as conn:
+            with conn.cursor(row_factory=psycopg.rows.dict_row) as cur:
                 query = f"SELECT id, document, metadata FROM {self.table_name} WHERE id = %s;"
                 cur.execute(query, (id,))
                 record = cur.fetchone()
@@ -156,8 +144,6 @@ class PostgresVectorStore(VectorStore):
                         score=1.0  # Assuming direct retrieval is a perfect match.
                     )
                 return None
-        finally:
-            self.pool.putconn(conn)
 
     async def update_document(
         self,
@@ -168,8 +154,7 @@ class PostgresVectorStore(VectorStore):
     ) -> None:
         if self.pool is None:
             raise VectorStoreError("PostgresVectorStore is not initialized.")
-        conn = self.pool.getconn()
-        try:
+        with self.pool.connection() as conn:
             with conn.cursor() as cur:
                 update_query = f"""
                 UPDATE {self.table_name}
@@ -177,16 +162,13 @@ class PostgresVectorStore(VectorStore):
                 WHERE id = %s;
                 """
                 cur.execute(update_query, (document, embedding, Json(metadata), id))
-                conn.commit()
-        finally:
-            self.pool.putconn(conn)
+            conn.commit()
 
     async def get_all(self) -> List[SearchResult]:
         if self.pool is None:
             raise VectorStoreError("PostgresVectorStore is not initialized.")
-        conn = self.pool.getconn()
-        try:
-            with conn.cursor(cursor_factory=RealDictCursor) as cur:
+        with self.pool.connection() as conn:
+            with conn.cursor(row_factory=psycopg.rows.dict_row) as cur:
                 query = f"SELECT id, document, metadata FROM {self.table_name};"
                 cur.execute(query)
                 records = cur.fetchall()
@@ -199,5 +181,3 @@ class PostgresVectorStore(VectorStore):
                     for record in records
                 ]
                 return results
-        finally:
-            self.pool.putconn(conn)
