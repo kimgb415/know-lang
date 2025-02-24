@@ -1,12 +1,12 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Dict, List, Literal, Optional
+from typing import TYPE_CHECKING, Any, Dict, List, Literal, Optional, Tuple
 
-import chromadb
 from chromadb.config import Settings
 from chromadb.errors import InvalidCollectionException
 
+import chromadb
 from knowlang.vector_stores.base import (SearchResult, VectorStore,
                                          VectorStoreError,
                                          VectorStoreInitError)
@@ -25,7 +25,22 @@ class ChromaVectorStore(VectorStore):
             collection_name=config.collection_name,
             similarity_metric=config.similarity_metric
         )
-    
+
+    def accumulate_result(
+        self,
+        acc: List[SearchResult], 
+        record: Tuple[str, float, Dict[str, Any]],
+        score_threshold: Optional[float] = None
+    ) -> List[SearchResult]:
+        doc, meta, dist = record
+        if score_threshold is None or dist <= score_threshold:
+            acc.append(SearchResult(
+                document=doc,
+                metadata=meta,
+                score=1.0 - dist  # Convert distance to similarity score
+            ))
+        return acc
+
     def __init__(
         self, 
         persist_directory: Path,
@@ -37,7 +52,7 @@ class ChromaVectorStore(VectorStore):
         self.similarity_metric = similarity_metric
         self.client = None
         self.collection = None
-        
+
     def initialize(self) -> None:
         """Initialize ChromaDB client and collection"""
         try:
@@ -50,11 +65,11 @@ class ChromaVectorStore(VectorStore):
             )
             
             try:
-                self.collection = self.client.get_collection(
+                self.collection = self.client.getcollection(
                     name=self.collection_name,
                 )
             except InvalidCollectionException:  # Collection doesn't exist
-                self.collection = self.client.create_collection(
+                self.collection = self.client.createcollection(
                     name=self.collection_name,
                     metadata={"hnsw:space": self.similarity_metric}
                 )
@@ -69,9 +84,7 @@ class ChromaVectorStore(VectorStore):
         metadatas: List[Dict[str, Any]],
         ids: Optional[List[str]] = None
     ) -> None:
-        if not self.collection:
-            raise VectorStoreError("ChromaDB collection not initialized")
-            
+        self.assert_initialized()
         self.collection.add(
             documents=documents,
             embeddings=embeddings,
@@ -79,45 +92,28 @@ class ChromaVectorStore(VectorStore):
             ids=ids or [str(i) for i in range(len(documents))]
         )
 
-    async def search(
+    async def query(
         self,
         query_embedding: List[float],
-        top_k: int = 5,
-        score_threshold: Optional[float] = None
-    ) -> List[SearchResult]:
-        if not self.collection:
-            raise VectorStoreError("ChromaDB collection not initialized")
-            
+        top_k: int = 5
+    ) -> List[Tuple[str, float, Dict[str, Any]]]:
         results = self.collection.query(
             query_embeddings=[query_embedding],
             n_results=top_k,
             include=['metadatas', 'documents', 'distances']
         )
-        
-        search_results = []
-        for doc, meta, dist in zip(
+        return zip(
             results['documents'][0],
             results['metadatas'][0],
             results['distances'][0]
-        ):
-            if score_threshold is None or dist <= score_threshold:
-                search_results.append(SearchResult(
-                    document=doc,
-                    metadata=meta,
-                    score=1.0 - dist  # Convert distance to similarity score
-                ))
-        
-        return search_results
+        )
 
     async def delete(self, ids: List[str]) -> None:
-        if not self.collection:
-            raise VectorStoreError("ChromaDB collection not initialized")
+        self.assert_initialized()
         self.collection.delete(ids=ids)
 
     async def get_document(self, id: str) -> Optional[SearchResult]:
-        if not self.collection:
-            raise VectorStoreError("ChromaDB collection not initialized")
-            
+        self.assert_initialized()
         try:
             result = self.collection.get(ids=[id])
             if result['documents']:
@@ -136,9 +132,7 @@ class ChromaVectorStore(VectorStore):
         embedding: List[float],
         metadata: Dict[str, Any]
     ) -> None:
-        if not self.collection:
-            raise VectorStoreError("ChromaDB collection not initialized")
-            
+        self.assert_initialized()
         self.collection.update(
             ids=[id],
             documents=[document],
