@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional
+from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Tuple
 from unittest.mock import AsyncMock
 
 import numpy as np
@@ -92,31 +92,36 @@ class MockVectorStore(VectorStore):
         score_threshold: Optional[float] = None
     ) -> List[SearchResult]:
         """Mock vector search with call tracking"""
-        return await self.search_mock(query_embedding, top_k, score_threshold)
-    
-    def accumulate_result(
-        self,
-        acc: List[SearchResult], 
-        record: Any, 
-        score_threshold: Optional[float] = None
-    ) -> List[SearchResult]:
-        return []
-    
-    async def _search(
-        self,
-        query_embedding: List[float],
-        top_k: int = 5,
-        score_threshold: Optional[float] = None
-    ) -> List[SearchResult]:
-        """Actual implementation of search"""
         if self.search_error:
             raise self.search_error
             
         if self.mock_search_fn:
             return await self.mock_search_fn(query_embedding, top_k, score_threshold)
-            
+        return super().search(query_embedding, top_k, score_threshold)
+    
+    def accumulate_result(
+        self,
+        acc: List[SearchResult], 
+        record: str, 
+        score_threshold: Optional[float] = None
+    ) -> List[SearchResult]:
+        doc_id, dist = record
+        score = 1.0 - dist  # Convert distance to similarity score
+        if score_threshold is None or score >= score_threshold:
+            acc.append(SearchResult(
+                document=self.documents[doc_id],
+                metadata=self.metadata[doc_id],
+                score=float(score)
+            ))
+        return acc
+    
+    async def query(
+        self,
+        query_embedding: List[float],
+        top_k: int = 5
+    ) -> List[Tuple[str, float, Dict[str, Any]]]:
         # Default behavior: return documents sorted by cosine similarity
-        scores = {}
+        distances = {}
         query_vec = np.array(query_embedding)
         
         for doc_id, doc_vec in self.embeddings.items():
@@ -124,21 +129,9 @@ class MockVectorStore(VectorStore):
             similarity = np.dot(query_vec, doc_vec) / (
                 np.linalg.norm(query_vec) * np.linalg.norm(doc_vec)
             )
-            scores[doc_id] = similarity
+            distances[doc_id] = 1 - similarity
             
-        # Sort by similarity and apply threshold
-        sorted_ids = sorted(scores.keys(), key=lambda k: scores[k], reverse=True)
-        results = []
-        
-        for doc_id in sorted_ids[:top_k]:
-            if score_threshold is None or scores[doc_id] >= score_threshold:
-                results.append(SearchResult(
-                    document=self.documents[doc_id],
-                    metadata=self.metadata[doc_id],
-                    score=float(scores[doc_id])
-                ))
-                
-        return results
+        return sorted(distances.items(), key=lambda k, v: distances[k])[:top_k]
 
     async def delete(self, ids: List[str]) -> None:
         """Mock document deletion with call tracking"""
