@@ -45,7 +45,7 @@ class PostgresVectorStore(VectorStore):
         try:
             self.measure() # Validate similarity metric
             vx = vecs.create_client(self.connection_string)
-            self.collection = vx.get_or_createcollection(name=self.table_name, dimension=self.embedding_dim)
+            self.collection = vx.get_or_create_collection(name=self.table_name, dimension=self.embedding_dim)
         except Exception as e:
             raise VectorStoreInitError(f"Failed to initialize PostgresVectorStore: {str(e)}") from e
 

@@ -1,20 +1,17 @@
 # test_chat_graph.py
+from unittest.mock import AsyncMock, Mock, patch
+
 import pytest
-from unittest.mock import Mock, AsyncMock, patch
 from pydantic_graph import End, GraphRunContext
 from voyageai.object.reranking import RerankingResult
 
-from knowlang.chat_bot.chat_graph import (
-    ChatGraphState,
-    ChatGraphDeps,
-    PolishQuestionNode,
-    RetrieveContextNode,
-    AnswerQuestionNode,
-    RetrievedContext,
-    ChatResult,
-    ChatStatus,
-    stream_chat_progress
-)
+from knowlang.chat_bot.chat_graph import (AnswerQuestionNode, ChatGraphDeps,
+                                          ChatGraphState, ChatResult,
+                                          ChatStatus, PolishQuestionNode,
+                                          RetrieveContextNode,
+                                          RetrievedContext, SearchResult,
+                                          stream_chat_progress)
+
 
 @pytest.mark.asyncio
 @patch('knowlang.chat_bot.chat_graph.Agent')
@@ -57,12 +54,20 @@ async def test_retrieve_context_node_success(
     mock_embedding = [1.0, 0.0, 0.0]  # This will match first test document
     mock_embedding_generator.return_value = mock_embedding
     mock_voyage_client = mock_voyageai.Client.return_value
-    mock_rerank = Mock()
-    mock_rerank.return_value.results = [
+    mock_rerank_obj = Mock()
+    mock_rerank_obj.results = [
         RerankingResult(relevance_score=0.8, document="def test_function(): pass", index=0),
         RerankingResult(relevance_score=0.6, document="class TestClass: pass", index=1)
     ]
+
+    mock_rerank = AsyncMock(return_value=mock_rerank_obj)
     mock_voyage_client.rerank = mock_rerank
+
+    populated_mock_store.search = AsyncMock(return_value=[
+        # Create SearchResult objects with appropriate fields.
+        SearchResult(document="def test_function(): pass", metadata={"file_path": "test1.py", "start_line": 1, "end_line": 2}, score=1.0),
+        SearchResult(document="class TestClass: pass", metadata={"file_path": "test2.py", "start_line": 10, "end_line": 12}, score=0.5)
+    ])
 
     next_node = await node.run(ctx)
 
