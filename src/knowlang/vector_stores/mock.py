@@ -27,9 +27,6 @@ class MockVectorStore(VectorStore):
     delete_error: Optional[Exception] = None
     update_error: Optional[Exception] = None
     
-    # Optional mock behavior functions
-    mock_search_fn: Optional[Callable] = None
-    
     # Tracking for test verification
     deleted_chunks: List[str] = field(default_factory=list)
     added_documents: List[str] = field(default_factory=list)
@@ -50,7 +47,6 @@ class MockVectorStore(VectorStore):
         # Create wrappers for method call tracking
         # For test assertions if needed
         self.add_documents_mock = AsyncMock(side_effect=self._add_documents)
-        self.search_mock = AsyncMock(side_effect=self._search)
         self.delete_mock = AsyncMock(side_effect=self._delete)
         self.get_document_mock = AsyncMock(side_effect=self._get_document)
         self.update_document_mock = AsyncMock(side_effect=self._update_document)
@@ -95,8 +91,6 @@ class MockVectorStore(VectorStore):
         if self.search_error:
             raise self.search_error
             
-        if self.mock_search_fn:
-            return await self.mock_search_fn(query_embedding, top_k, score_threshold)
         return super().search(query_embedding, top_k, score_threshold)
     
     def accumulate_result(
@@ -216,7 +210,6 @@ class MockVectorStore(VectorStore):
         self.add_error = None
         self.delete_error = None
         self.update_error = None
-        self.mock_search_fn = None
         self.deleted_chunks.clear()
         self.added_documents.clear()
         self.updated_documents.clear()
