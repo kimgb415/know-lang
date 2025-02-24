@@ -91,8 +91,7 @@ class VectorStore(ABC):
         self.assert_initialized()
         records = await self.query(
             query_embedding=query_embedding,
-            top_k=top_k,
-            score_threshold=score_threshold
+            top_k=top_k
         )
         return reduce(
             lambda acc, record: self.accumulate_result(acc, record, score_threshold),

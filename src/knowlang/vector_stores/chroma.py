@@ -5,11 +5,9 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any, Dict, List, Literal, Optional, Tuple
 
 from chromadb.config import Settings
-from chromadb.errors import InvalidCollectionException
 
 import chromadb
 from knowlang.vector_stores.base import (SearchResult, VectorStore,
-                                         VectorStoreError,
                                          VectorStoreInitError)
 
 if TYPE_CHECKING:
@@ -65,17 +63,10 @@ class ChromaVectorStore(VectorStore):
                     allow_reset=True
                 )
             )
-            
-            try:
-                self.collection = self.client.getcollection(
-                    name=self.collection_name,
-                )
-            except InvalidCollectionException:  # Collection doesn't exist
-                self.collection = self.client.createcollection(
-                    name=self.collection_name,
-                    metadata={"hnsw:space": self.similarity_metric}
-                )
-                
+            self.collection = self.client.get_or_create_collection(
+                name=self.collection_name,
+                metadata={"hnsw:space": self.similarity_metric}
+            )
         except Exception as e:
             raise VectorStoreInitError(f"Failed to initialize ChromaDB: {str(e)}") from e
 
@@ -136,7 +127,7 @@ class ChromaVectorStore(VectorStore):
         metadata: Dict[str, Any]
     ) -> None:
         self.assert_initialized()
-        self.collection.update(
+        self.collection.upsert(
             ids=[id],
             documents=[document],
             embeddings=[embedding],
