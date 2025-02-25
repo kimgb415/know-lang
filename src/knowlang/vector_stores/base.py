@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
+from functools import reduce
 from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
 from pydantic import BaseModel
@@ -30,6 +31,14 @@ class SearchResult(BaseModel):
 class VectorStore(ABC):
     """Abstract base class for vector store implementations"""
 
+    def __init__(self, *args, **kwargs):
+        self.collection = kwargs.get('collection', None)
+
+    def assert_initialized(self) -> None:
+        """Assert that the vector store is initialized"""
+        if self.collection is None:
+            raise VectorStoreError(f"{self.__class__.__name__} is not initialized.")
+
     @classmethod
     @abstractmethod
     def create_from_config(config: DBConfig) -> "VectorStore":
@@ -40,6 +49,16 @@ class VectorStore(ABC):
     @abstractmethod
     def initialize(self) -> None:
         """Initialize the vector store"""
+        pass
+
+    @abstractmethod
+    def accumulate_result(
+        self,
+        acc: List[SearchResult],
+        record: Any, 
+        score_threshold: Optional[float] = None
+    ) -> List[SearchResult]:
+        """Accumulate search result"""
         pass
     
     @abstractmethod
@@ -52,8 +71,16 @@ class VectorStore(ABC):
     ) -> None:
         """Add documents with their embeddings and metadata"""
         pass
-    
+
     @abstractmethod
+    async def query(
+        self,
+        query_embedding: List[float],
+        top_k: int = 5
+    ) -> List[Any]:
+        """Query the vector store for similar documents"""
+        pass
+
     async def search(
         self,
         query_embedding: List[float],
@@ -61,7 +88,16 @@ class VectorStore(ABC):
         score_threshold: Optional[float] = None
     ) -> List[SearchResult]:
         """Search for similar documents"""
-        pass
+        self.assert_initialized()
+        records = await self.query(
+            query_embedding=query_embedding,
+            top_k=top_k
+        )
+        return reduce(
+            lambda acc, record: self.accumulate_result(acc, record, score_threshold),
+            records,
+            []
+        )
     
     @abstractmethod
     async def delete(self, ids: List[str]) -> None:
