@@ -4,7 +4,7 @@ from fastapi.openapi.utils import get_openapi
 from pydantic import BaseModel
 from sse_starlette.sse import EventSourceResponse
 from knowlang.configs import AppConfig
-from knowlang.vector_stores import VectorStoreFactory
+from knowlang.vector_stores.factory import VectorStoreFactory
 from knowlang.utils import FancyLogger
 from knowlang.chat_bot import (
     stream_chat_progress, 
@@ -58,7 +58,7 @@ async def get_app_config():
 
 # Dependency to get vector store
 async def get_vector_store(config: AppConfig = Depends(get_app_config)):
-    return VectorStoreFactory.get(config.db)
+    return VectorStoreFactory.get(config.db, config.embedding)
 
 # Dependency to get chat analytics
 async def get_chat_analytics(config: AppConfig = Depends(get_app_config)):
