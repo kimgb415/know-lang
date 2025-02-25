@@ -1,8 +1,11 @@
+import logging
 import os
+import shutil
+import tempfile
 from datetime import datetime
 from pathlib import Path
 from typing import Set
-import logging 
+
 from git import InvalidGitRepositoryError, Repo
 
 from knowlang.configs import AppConfig
@@ -30,11 +33,17 @@ class CodebaseManager:
     async def get_current_files(self) -> Set[Path]:
         """Get set of current files in directory with proper filtering"""
         current_files = set()
+        # Convert to string for os.walk
+        root_dir = str(self.config.db.codebase_directory)
+        temp_dir = tempfile.mkdtemp()
+        try:
+            self.repo = Repo.clone_from(self.config.db.codebase_directory, temp_dir)
+            root_dir = temp_dir
+        except Exception as e:
+            # Not a git repository link
+            pass
         
         try:
-            # Convert to string for os.walk
-            root_dir = str(self.config.db.codebase_directory)
-            
             for root, dirs, files in os.walk(root_dir):
                 # Skip git-ignored directories early
                 if self.repo:
@@ -59,6 +68,8 @@ class CodebaseManager:
         except Exception as e:
             LOG.error(f"Error scanning directory {self.config.db.codebase_directory}: {e}")
             raise
+        finally:
+            shutil.rmtree(temp_dir)
 
     async def create_file_state(self, file_path: Path, chunk_ids: Set[str]) -> FileState:
         """Create a new FileState object for a file"""
