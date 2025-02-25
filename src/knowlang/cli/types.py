@@ -3,6 +3,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Literal, Optional
 
+
 @dataclass
 class BaseCommandArgs:
     """Base arguments for all commands."""
@@ -13,6 +14,7 @@ class BaseCommandArgs:
 class ParseCommandArgs(BaseCommandArgs):
     """Arguments for the parse command."""
     path: Path
+    url: str
     output: Literal["table", "json"]
     command: Literal["parse"]  # for command identification
 
