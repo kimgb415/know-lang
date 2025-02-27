@@ -21,8 +21,11 @@ class ChunkIndexer:
     async def process_chunk(self, chunk: CodeChunk) -> str:
         """Process a single chunk and store in vector store"""
         try:
-            # Get summary from indexing agent
-            summary = await self.indexing_agent.summarize_chunk(chunk)
+            if self.config.parser.enable_code_summarization:
+                # Get summary from indexing agent
+                summary = await self.indexing_agent.summarize_chunk(chunk)
+            else:
+                summary = chunk.content
             
             # Generate embedding
             embedding = generate_embedding(summary, self.config.embedding)

@@ -83,6 +83,10 @@ class ParserConfig(BaseSettings):
         }
     )
     path_patterns: PathPatterns = Field(default_factory=PathPatterns)
+    enable_code_summarization: bool = Field(
+        default=False,
+        description="Enable code summarization to be stored in the vector store"
+    )
 
 
 class EmbeddingConfig(BaseSettings):
