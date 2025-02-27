@@ -5,10 +5,10 @@ from knowlang.configs import AppConfig
 from knowlang.core.types import CodeChunk, DatabaseChunkMetadata
 from knowlang.indexing.indexing_agent import IndexingAgent
 from knowlang.models import generate_embedding
-from knowlang.utils import FancyLogger
+import logging
 from knowlang.vector_stores.factory import VectorStoreFactory
 
-LOG = FancyLogger(__name__)
+LOG = logging.getLogger(__name__)
 
 class ChunkIndexer:
     """Handles processing of code chunks including summary and embedding generation"""

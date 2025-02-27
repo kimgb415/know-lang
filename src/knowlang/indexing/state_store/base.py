@@ -16,9 +16,9 @@ from knowlang.configs import DBConfig
 from knowlang.core.types import StateStoreProvider
 from knowlang.indexing.file_utils import (compute_file_hash, get_absolute_path,
                                           get_relative_path)
-from knowlang.utils import FancyLogger
+import logging
 
-LOG = FancyLogger(__name__)
+LOG = logging.getLogger(__name__)
 Base = declarative_base()
 
 class StateChangeType(str, Enum):

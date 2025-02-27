@@ -2,9 +2,9 @@ import hashlib
 from pathlib import Path
 
 from knowlang.configs import DBConfig
-from knowlang.utils import FancyLogger
+import logging
 
-LOG = FancyLogger(__name__)
+LOG = logging.getLogger(__name__)
 
 def compute_file_hash(file_path: Path) -> str:
     """Compute SHA-256 hash of file contents.

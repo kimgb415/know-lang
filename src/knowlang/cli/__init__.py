@@ -3,9 +3,10 @@ import asyncio
 from typing import Optional, Sequence
 
 from knowlang.cli.parser import parse_args
-from knowlang.utils import FancyLogger
+from knowlang.utils import setup_logger, get_logger
 
-LOG = FancyLogger(__name__)
+LOG = get_logger(__name__)
+
 
 async def main(args: Optional[Sequence[str]] = None) -> int:
     """Main CLI entry point.
@@ -35,5 +36,6 @@ async def main(args: Optional[Sequence[str]] = None) -> int:
 
 def cli_main() -> None:
     """Entry point for CLI scripts."""
+    setup_logger()
     exit_code = asyncio.run(main())
     exit(exit_code)

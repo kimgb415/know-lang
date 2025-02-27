@@ -19,11 +19,12 @@ from rich.console import Console
 from voyageai.object.reranking import RerankingObject
 from knowlang.configs import AppConfig, EmbeddingConfig, RerankerConfig
 from knowlang.models import EmbeddingInputType, generate_embedding
-from knowlang.utils import FancyLogger, create_pydantic_model, truncate_chunk
+from knowlang.utils import create_pydantic_model, truncate_chunk
+import logging
 from knowlang.vector_stores import SearchResult, VectorStore
 from knowlang.api import ApiModelRegistry
 
-LOG = FancyLogger(__name__)
+LOG = logging.getLogger(__name__)
 console = Console()
 
 @ApiModelRegistry.register

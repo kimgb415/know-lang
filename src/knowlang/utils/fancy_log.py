@@ -1,203 +1,111 @@
 import json
 import logging
-import logging.config
-import logging.handlers
-import os
-import queue
-
-JSON_LOGGING = os.environ.get("JSON_LOGGING", "false").lower() == "true"
-
-CHAT = 29
-logging.addLevelName(CHAT, "CHAT")
-
-RESET_SEQ: str = "\033[0m"
-COLOR_SEQ: str = "\033[1;%dm"
-BOLD_SEQ: str = "\033[1m"
-UNDERLINE_SEQ: str = "\033[04m"
-
-ORANGE: str = "\033[33m"
-YELLOW: str = "\033[93m"
-WHITE: str = "\33[37m"
-BLUE: str = "\033[34m"
-LIGHT_BLUE: str = "\033[94m"
-RED: str = "\033[91m"
-GREY: str = "\33[90m"
-GREEN: str = "\033[92m"
-
-EMOJIS: dict[str, str] = {
-    "DEBUG": "🐛",
-    "INFO": "📝",
-    "CHAT": "💬",
-    "WARNING": "⚠️",
-    "ERROR": "❌",
-    "CRITICAL": "💥",
-}
-
-KEYWORD_COLORS: dict[str, str] = {
-    "DEBUG": WHITE,
-    "INFO": LIGHT_BLUE,
-    "CHAT": GREEN,
-    "WARNING": YELLOW,
-    "ERROR": ORANGE,
-    "CRITICAL": RED,
-}
+from rich.console import Console
+from rich.logging import RichHandler
+from knowlang.configs import LoggingConfig
 
 
 class JsonFormatter(logging.Formatter):
+    """Format logs as JSON for structured logging."""
     def format(self, record):
-        return json.dumps(record.__dict__)
-
-
-def formatter_message(message: str, use_color: bool = True) -> str:
-    """
-    Syntax highlight certain keywords
-    """
-    if use_color:
-        message = message.replace("$RESET", RESET_SEQ).replace("$BOLD", BOLD_SEQ)
-    else:
-        message = message.replace("$RESET", "").replace("$BOLD", "")
-    return message
-
-
-def format_word(
-    message: str, word: str, color_seq: str, bold: bool = False, underline: bool = False
-) -> str:
-    """
-    Surround the fiven word with a sequence
-    """
-    replacer = color_seq + word + RESET_SEQ
-    if underline:
-        replacer = UNDERLINE_SEQ + replacer
-    if bold:
-        replacer = BOLD_SEQ + replacer
-    return message.replace(word, replacer)
-
-
-class ConsoleFormatter(logging.Formatter):
-    """
-    This Formatted simply colors in the levelname i.e 'INFO', 'DEBUG'
-    """
-
-    def __init__(
-        self, fmt: str, datefmt: str = None, style: str = "%", use_color: bool = True
-    ):
-        super().__init__(fmt, datefmt, style)
-        self.use_color = use_color
-
-    def format(self, record: logging.LogRecord) -> str:
-        """
-        Format and highlight certain keywords
-        """
-        rec = record
-        levelname = rec.levelname
-        if self.use_color and levelname in KEYWORD_COLORS:
-            levelname_color = KEYWORD_COLORS[levelname] + levelname + RESET_SEQ
-            rec.levelname = levelname_color
-        rec.name = f"{GREY}{rec.name:<15}{RESET_SEQ}"
-        rec.msg = (
-            KEYWORD_COLORS[levelname] + EMOJIS[levelname] + "  " + rec.msg + RESET_SEQ
-        )
-        return logging.Formatter.format(self, rec)
+        log_record = {
+            "time": self.formatTime(record),
+            "name": record.name,
+            "level": record.levelname,
+            "message": record.getMessage(),
+        }
+        if hasattr(record, "exc_info") and record.exc_info:
+            log_record["exception"] = self.formatException(record.exc_info)
+        
+        return json.dumps(log_record)
 
 
 class FancyLogger(logging.Logger):
     """
-    This adds extra logging functions such as logger.trade and also
-    sets the logger to use the custom formatter
+    Enhanced logger using Rich for beautiful console output with optional file logging.
     """
+    FORMAT = "%(message)s"
+    JSON_FORMAT = '{"time": "%(asctime)s", "name": "%(name)s", "level": "%(levelname)s", "message": "%(message)s"}'
 
-    CONSOLE_FORMAT: str = (
-        "[%(asctime)s] [$BOLD%(name)-15s$RESET] [%(levelname)-8s]\t%(message)s"
-    )
-    FORMAT: str = "%(asctime)s %(name)-15s %(levelname)-8s %(message)s"
-    COLOR_FORMAT: str = formatter_message(CONSOLE_FORMAT, True)
-    JSON_FORMAT: str = '{"time": "%(asctime)s", "name": "%(name)s", "level": "%(levelname)s", "message": "%(message)s"}'
-
-    def __init__(self, name: str, logLevel: str = "DEBUG"):
-        logging.Logger.__init__(self, name, logLevel)
-
-        # Queue Handler
-        queue_handler = logging.handlers.QueueHandler(queue.Queue(-1))
-        json_formatter = logging.Formatter(self.JSON_FORMAT)
-        queue_handler.setFormatter(json_formatter)
-        self.addHandler(queue_handler)
-
-        if JSON_LOGGING:
-            console_formatter = JsonFormatter()
-        else:
-            console_formatter = ConsoleFormatter(self.COLOR_FORMAT)
-        console = logging.StreamHandler()
-        console.setFormatter(console_formatter)
-        self.addHandler(console)
-
-    def chat(self, role: str, openai_repsonse: dict, messages=None, *args, **kws):
+    def __init__(self, name: str):
         """
-        Parse the content, log the message and extract the usage into prometheus metrics
+        Initialize the logger with Rich formatting and optional file output.
+        
+        Args:
+            name: The logger name
         """
-        role_emojis = {
-            "system": "🖥️",
-            "user": "👤",
-            "assistant": "🤖",
-            "function": "⚙️",
-        }
-        if self.isEnabledFor(CHAT):
-            if messages:
-                for message in messages:
-                    self._log(
-                        CHAT,
-                        f"{role_emojis.get(message['role'], '🔵')}: {message['content']}",
-                    )
-            else:
-                response = json.loads(openai_repsonse)
+        config = LoggingConfig()
+            
+        logging.Logger.__init__(self, name, config.level)
+        
+        # Configure console logging with Rich
+        console = Console()
+        rich_handler = RichHandler(
+            console=console,
+            show_time=True,
+            show_path=config.show_path,
+            markup=True,
+            rich_tracebacks=config.rich_tracebacks,
+            tracebacks_show_locals=config.tracebacks_show_locals
+        )
+        rich_handler.setLevel(logging._nameToLevel[config.level])
+        rich_handler.setFormatter(logging.Formatter(self.FORMAT))
+        self.addHandler(rich_handler)
+        
+        # Configure file logging if enabled
+        if config.file_enabled:
+            self._setup_file_logging(config)
+    
+    def _setup_file_logging(self, config: LoggingConfig):
+        """Set up file logging with proper directory creation."""
+        log_path = config.file_path
+        log_dir = log_path.parent
+        
+        # Create log directory if it doesn't exist
+        if not log_dir.exists():
+            log_dir.mkdir(parents=True, exist_ok=True)
+        
+        # Choose formatter based on JSON_LOGGING flag
+        file_formatter = JsonFormatter() if config.json_logging else logging.Formatter(
+            "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+        )
+        
+        # Create and configure file handler
+        file_handler = logging.FileHandler(config.file_path)
+        file_handler.setLevel(logging._nameToLevel[config.level])
+        file_handler.setFormatter(file_formatter)
+        self.addHandler(file_handler)
 
-                self._log(
-                    CHAT,
-                    f"{role_emojis.get(role, '🔵')}: {response['choices'][0]['message']['content']}",
-                )
 
-
-class QueueLogger(logging.Logger):
+def get_logger(name: str) -> FancyLogger:
     """
-    Custom logger class with queue
+    Get a configured logger instance.
+    
+    Args:
+        name: The logger name
+    
+    Returns:
+        A configured FancyLogger instance
     """
-
-    def __init__(self, name: str, level: int = logging.NOTSET):
-        super().__init__(name, level)
-        queue_handler = logging.handlers.QueueHandler(queue.Queue(-1))
-        self.addHandler(queue_handler)
+    return logging.getLogger(name)
 
 
-logging_config: dict = dict(
-    version=1,
-    formatters={
-        "console": {
-            "()": ConsoleFormatter,
-            "format": FancyLogger.COLOR_FORMAT,
-        },
-    },
-    handlers={
-        "h": {
-            "class": "logging.StreamHandler",
-            "formatter": "console",
-            "level": logging.INFO,
-        },
-    },
-    root={
-        "handlers": ["h"],
-        "level": logging.INFO,
-    },
-    loggers={
-        "autogpt": {
-            "handlers": ["h"],
-            "level": logging.INFO,
-            "propagate": False,
-        },
-    },
-)
-
-
-def setup_logger():
+def setup_logger() -> None:
     """
-    Setup the logger with the specified format
+    Configure the global logging settings.
     """
-    logging.config.dictConfig(logging_config)
+    config = LoggingConfig()
+    
+    # Set the default logger class
+    logging.setLoggerClass(FancyLogger)
+    
+    # Configure root logger
+    root_logger = logging.getLogger()
+    if root_logger.handlers:
+        for handler in root_logger.handlers:
+            root_logger.removeHandler(handler)
+    
+    root_logger = get_logger("knowlang")
+    root_logger.setLevel(logging._nameToLevel[config.level])
+    
+    return root_logger

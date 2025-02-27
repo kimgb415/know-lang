@@ -1,15 +1,15 @@
 from pathlib import Path
 from typing import List, Optional
-
+import logging
 import tree_sitter_python
 from tree_sitter import Language, Node, Parser
 
 from knowlang.core.types import (BaseChunkType, CodeChunk, CodeLocation,
                                  LanguageEnum)
 from knowlang.parser.base.parser import LanguageParser
-from knowlang.utils import FancyLogger, convert_to_relative_path
+from knowlang.utils import convert_to_relative_path
 
-LOG = FancyLogger(__name__)
+LOG = logging.getLogger(__name__)
 
 class PythonParser(LanguageParser):
     """Python-specific implementation of LanguageParser"""

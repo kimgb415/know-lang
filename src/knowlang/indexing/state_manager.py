@@ -3,10 +3,10 @@ from typing import Optional
 
 from knowlang.configs import AppConfig
 from knowlang.indexing.state_store.base import FileState, StateStore
-from knowlang.utils import FancyLogger
+import logging
 from knowlang.vector_stores.factory import VectorStoreFactory
 
-LOG = FancyLogger(__name__)
+LOG = logging.getLogger(__name__)
 
 class StateManager:
     """Manages file states and their associated chunks"""

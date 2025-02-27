@@ -5,13 +5,14 @@ import gradio as gr
 from gradio import ChatMessage
 
 from knowlang.configs import AppConfig
-from knowlang.utils import FancyLogger, RateLimiter
+import logging
+from knowlang.utils import RateLimiter
 from knowlang.vector_stores.factory import VectorStoreFactory
 
 from .chat_graph import ChatStatus, stream_chat_progress
 from .feedback import ChatAnalytics
 
-LOG = FancyLogger(__name__)
+LOG = logging.getLogger(__name__)
 
 @dataclass
 class CodeContext:

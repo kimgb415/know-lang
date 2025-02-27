@@ -2,11 +2,11 @@
 from knowlang.chat_bot import create_chatbot
 from knowlang.cli.types import ChatCommandArgs
 from knowlang.configs import AppConfig
-from knowlang.utils import FancyLogger
+import logging
 from knowlang.vector_stores import VectorStoreError
 from knowlang.vector_stores.factory import VectorStoreFactory
 
-LOG = FancyLogger(__name__)
+LOG = logging.getLogger(__name__)
 
 def create_config(args: ChatCommandArgs) -> AppConfig:
     """Create configuration from file or defaults."""
