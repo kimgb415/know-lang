@@ -1,4 +1,5 @@
 from .base import generate_model_config
+from .logging_config import LoggingConfig
 from .config import (AppConfig, DBConfig, EmbeddingConfig, LanguageConfig,
                      LLMConfig, ModelProvider, ParserConfig, PathPatterns,
                      RerankerConfig)
@@ -14,4 +15,5 @@ __all__ = [
     "LLMConfig",
     "ParserConfig",
     "PathPatterns",
+    "LoggingConfig",
 ]

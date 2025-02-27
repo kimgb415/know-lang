@@ -1,17 +1,15 @@
-import hashlib
 import os
 from datetime import datetime
 from pathlib import Path
 from typing import Set
-
+import logging 
 from git import InvalidGitRepositoryError, Repo
 
 from knowlang.configs import AppConfig
 from knowlang.indexing.file_utils import compute_file_hash, get_relative_path
 from knowlang.indexing.state_store.base import FileState
-from knowlang.utils import FancyLogger, convert_to_relative_path
 
-LOG = FancyLogger(__name__)
+LOG = logging.getLogger(__name__)
 
 class CodebaseManager:
     """Manages file-level operations and state creation"""

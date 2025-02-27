@@ -2,6 +2,7 @@ from collections import defaultdict
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Dict, List
+import logging
 
 from knowlang.configs import AppConfig
 from knowlang.core.types import CodeChunk
@@ -9,9 +10,9 @@ from knowlang.indexing.chunk_indexer import ChunkIndexer
 from knowlang.indexing.codebase_manager import CodebaseManager
 from knowlang.indexing.state_manager import StateManager
 from knowlang.indexing.state_store.base import FileChange, StateChangeType
-from knowlang.utils import FancyLogger, convert_to_relative_path
+from knowlang.utils import convert_to_relative_path
 
-LOG = FancyLogger(__name__)
+LOG = logging.getLogger(__name__)
 
 @dataclass
 class UpdateStats:

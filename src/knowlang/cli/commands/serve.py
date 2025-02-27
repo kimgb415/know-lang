@@ -2,11 +2,11 @@
 import uvicorn
 from knowlang.cli.types import ServeCommandArgs
 from knowlang.configs import AppConfig
-from knowlang.utils import FancyLogger
+import logging
 from knowlang.vector_stores.factory import VectorStoreFactory
 from knowlang.vector_stores import VectorStoreError
 
-LOG = FancyLogger(__name__)
+LOG = logging.getLogger(__name__)
 
 def create_config(args: ServeCommandArgs) -> AppConfig:
     """Create configuration from file or defaults."""
