@@ -63,16 +63,40 @@ async def test_process_single_chunk(chunk_indexer: ChunkIndexer, mock_indexing_a
     
     # Verify
     assert chunk_id == chunk.location.to_single_line()
-    mock_indexing_agent.summarize_chunk.assert_called_once_with(chunk)
     
     # Verify document was added to vector store
     docs = await chunk_indexer.vector_store.get_all()
     assert len(docs) == 1
-    assert docs[0].document == "Test summary"  # Summary from mock agent
+    assert docs[0].document == "def test(): pass"
 
 @pytest.mark.asyncio
 async def test_process_multiple_chunks(chunk_indexer: ChunkIndexer, mock_indexing_agent: IndexingAgent):
     """Test processing multiple chunks from a file"""
+    # Create test chunks
+    chunks = [
+        create_test_chunk("test.py", "def test1(): pass", start_line=1, end_line=2),
+        create_test_chunk("test.py", "def test2(): pass", start_line=10, end_line=20),
+        create_test_chunk("test.py", "class Test: pass", start_line=100, end_line=200)
+    ]
+    
+    # Process chunks
+    chunk_ids = await chunk_indexer.process_file_chunks(Path("test.py"), chunks)
+    
+    # Verify
+    assert len(chunk_ids) == 3
+    assert mock_indexing_agent.summarize_chunk.call_count == 0
+    
+    # Verify all documents were added to vector store
+    docs = await chunk_indexer.vector_store.get_all()
+    assert len(docs) == 3
+
+@pytest.mark.asyncio
+async def test_process_multiple_chunks_with_summarization(chunk_indexer: ChunkIndexer, mock_indexing_agent: IndexingAgent):
+    """Test processing multiple chunks from a file"""
+    # Enable code summarization
+    chunk_indexer.config.parser.enable_code_summarization = True
+
+
     # Create test chunks
     chunks = [
         create_test_chunk("test.py", "def test1(): pass", start_line=1, end_line=2),
@@ -92,8 +116,11 @@ async def test_process_multiple_chunks(chunk_indexer: ChunkIndexer, mock_indexin
     assert len(docs) == 3
 
 @pytest.mark.asyncio
-async def test_error_handling(chunk_indexer: ChunkIndexer, mock_indexing_agent: IndexingAgent):
+async def test_error_handling_during_summarization(chunk_indexer: ChunkIndexer, mock_indexing_agent: IndexingAgent):
     """Test error handling during chunk processing"""
+    # Enable code summarization
+    chunk_indexer.config.parser.enable_code_summarization = True
+
     # Configure mock to raise exception
     mock_indexing_agent.summarize_chunk.side_effect = Exception("Test error")
     
