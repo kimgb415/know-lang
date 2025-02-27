@@ -35,6 +35,7 @@ async def parse_command(args: ParseCommandArgs) -> None:
     
     # Update codebase directory in config
     config.db.codebase_directory = Path(args.path)
+    config.db.codebase_url = args.url
     
     # Create parser code_parser_factory
     code_parser_factory = CodeParserFactory(config)
@@ -51,6 +52,7 @@ async def parse_command(args: ParseCommandArgs) -> None:
         file_changes = await state_manager.state_store.detect_changes(codebase_files)
         progress.update(f"detected {len(file_changes)} file changes")
 
+        # TODO: handle case when codebase_directory is git repository url
         for changed_file_path in [
             (config.db.codebase_directory / change.path) 
             for change in file_changes

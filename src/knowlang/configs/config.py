@@ -161,6 +161,10 @@ class DBConfig(BaseSettings):
         default=Path("./"),
         description="Root directory of the codebase to analyze"
     )
+    codebase_url: Optional[str] = Field(
+        default=None,
+        description="URL of the codebase repository"
+    )
     similarity_metric: Literal['cosine'] = Field(
         default='cosine',
         description="Similarity metric for vector search"
