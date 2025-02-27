@@ -1,9 +1,9 @@
+import logging
 from pathlib import Path
 from typing import Optional
 
 from knowlang.configs import AppConfig
-from knowlang.indexing.state_store.base import FileState, StateStore
-import logging
+from knowlang.indexing.state_store.base import FileState, get_state_store
 from knowlang.vector_stores.factory import VectorStoreFactory
 
 LOG = logging.getLogger(__name__)
@@ -12,7 +12,7 @@ class StateManager:
     """Manages file states and their associated chunks"""
     
     def __init__(self, config: AppConfig):
-        self.state_store = StateStore(config.db)
+        self.state_store = get_state_store(config.db)
         self.vector_store = VectorStoreFactory.get(config.db, config.embedding)
 
     async def get_file_state(self, file_path: Path) -> Optional[FileState]:

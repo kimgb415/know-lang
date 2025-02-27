@@ -109,6 +109,7 @@ class StateStoreProvider(str, Enum):
     """Supported state store types"""
     SQLITE = "sqlite"
     POSTGRES = "postgres"
+    CUSTOM = "custom"
     # add more types in future:
     # MYSQL = "mysql"
     # MONGODB = "mongodb"

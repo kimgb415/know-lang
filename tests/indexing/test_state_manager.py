@@ -28,7 +28,7 @@ def mock_config():
 def state_manager(mock_config, mock_state_store, mock_vector_store):
     """Create StateManager with patched dependencies"""
     # Patch the state store creation
-    with patch('knowlang.indexing.state_manager.StateStore', return_value=mock_state_store):
+    with patch('knowlang.indexing.state_manager.get_state_store', return_value=mock_state_store):
         # Patch the vector store factory
         with patch('knowlang.indexing.state_manager.VectorStoreFactory.get', return_value=mock_vector_store):
             yield StateManager(mock_config)
