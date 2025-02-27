@@ -91,19 +91,10 @@ class ModelProvider(str, Enum):
     TESTING = "testing"
 
 class VectorStoreProvider(Enum):
-    CHROMA = ("chroma", ChromaVectorStore)
-    POSTGRES = ("postgres", PostgresVectorStore)
-    TESTING = ("testing", MockVectorStore)
-
-    def __init__(self, value: str, store_class: Type[VectorStore]):
-        self._value_ = value
-        self._store_class = store_class
-
-    @property
-    def store_class(self) -> Type[VectorStore]:
-        if self._store_class is None:
-            raise VectorStoreNotFoundError(f"Provider {self._value_} not supported")
-        return self._store_class
+    CHROMA = "chroma"
+    POSTGRES = "postgres"
+    CUSTOM = "custom"
+    TESTING = "testing"
 
 class StateStoreProvider(str, Enum):
     """Supported state store types"""
