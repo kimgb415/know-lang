@@ -5,14 +5,17 @@ from typing import TYPE_CHECKING, Any, Dict, List, Literal, Optional
 import vecs
 from vecs.collection import Record
 
+from knowlang.core.types import VectorStoreProvider
 from knowlang.vector_stores.base import (SearchResult, VectorStore,
                                          VectorStoreError,
-                                         VectorStoreInitError)
+                                         VectorStoreInitError,
+                                         register_vector_store)
 
 if TYPE_CHECKING:
     from knowlang.configs import DBConfig, EmbeddingConfig
 
 
+@register_vector_store(VectorStoreProvider.POSTGRES)
 class PostgresVectorStore(VectorStore):
     """Postgres implementation of VectorStore compatible with the pgvector extension using psycopg."""
 

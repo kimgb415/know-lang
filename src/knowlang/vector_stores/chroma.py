@@ -7,13 +7,15 @@ from typing import TYPE_CHECKING, Any, Dict, List, Literal, Optional, Tuple
 from chromadb.config import Settings
 
 import chromadb
+from knowlang.core.types import VectorStoreProvider
 from knowlang.vector_stores.base import (SearchResult, VectorStore,
-                                         VectorStoreInitError)
+                                         VectorStoreInitError,
+                                         register_vector_store)
 
 if TYPE_CHECKING:
     from knowlang.configs import DBConfig, EmbeddingConfig
 
-
+@register_vector_store(VectorStoreProvider.CHROMA)
 class ChromaVectorStore(VectorStore):
     """ChromaDB implementation of VectorStore"""
 
